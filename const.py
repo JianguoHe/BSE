@@ -5,7 +5,6 @@ from numba.experimental import jitclass
 
 
 
-
 # 星族合成参数
 num_evolve = 1e5         # 演化的双星数量
 m1_min = 5               # 恒星1的最小质量
