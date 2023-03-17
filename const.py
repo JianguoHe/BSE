@@ -14,7 +14,6 @@ sep_min = 3              # 最小轨道间距
 sep_max = 1e4            # 最大轨道间距
 
 
-
 # 演化参数
 alpha = 1.0              # 公共包层效率参数(1)
 SNtype = 1               # 超新星类型(1,2,3分别对应于rapid,delayed,stochastic)
