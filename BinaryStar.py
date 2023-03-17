@@ -83,7 +83,9 @@ class BinaryStar:
             self.decc_gw = - 8.315e-10 * term1 * term3 * self.ecc
 
 
-
+    def tide(self):
+        a = 3
+        b = 4
 
 
     def chirp_mass(self):
