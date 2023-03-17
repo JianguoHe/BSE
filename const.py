@@ -4,34 +4,21 @@ from numba import float64
 from numba.experimental import jitclass
 
 
-# 数值常量
-mch = 1.44           # 钱德拉塞卡极限（太阳质量）
-pc = 3.08567758e18   # 秒差距 → 厘米
-yeardy = 365.25
-yearsc = 3.1557e7
-Msun = 1.9884e33     # 太阳质量（克）
-Rsun = 6.957e10      # 太阳半径(单位: 厘米)
-G = 6.6743e-8        # 引力常量(厘米克秒制)
-c = 2.99792458e10    # 光速(厘米克秒制)
-aursun = 215.0291    # 计算双星轨道间距中的一个常数(公式中所有单位转化为太阳单位)
-tol = 1e-7
+# 星族合成参数
+num_evolve = 1e5         # 演化的双星数量
+m1_min = 5               # 恒星1的最小质量
+m1_max = 50              # 恒星1的最大质量
+m2_min = 0.5             # 恒星2的最小质量
+m2_max = 50              # 恒星2的最大质量
+sep_min = 3              # 最小轨道间距
+sep_max = 1e4            # 最大轨道间距
 
 
-# 星族合成中的常量
-tiny = 1e-14         # 小量
-
-# 星风质量损失相关常数
-neta = 0.5               # Reimers 质量损失系数，（通常为 0.5）
-alpha_wind = 1.5         # Bondi-Hoyle 星风吸积因子 (3/2)
-beta_wind = 0.125        # 星风速度因子：正比于 vwind**2 (1/8)
-bwind = 0.0              # 星风增强质损参数（由于双星的潮汐作用）
-acc1 = 3.920659e8        # 风吸积常数
-
-
-num_evolve = 12e6        # 演化的双星数量
-hewind = 1.0             # 氦星质损因子（通常为 1 ）
+# 演化参数
 alpha = 1.0              # 公共包层效率参数(1)
-SNtype = 2               # 超新星类型(1,2,3分别对应于rapid,delayed,stochastic)
+SNtype = 1               # 超新星类型(1,2,3分别对应于rapid,delayed,stochastic)
+tiny = 1e-14             # 小量
+hewind = 1.0             # 氦星质损因子（通常为 1 ）
 ceflag = 3               # ceflag > 0 activates spin-energy correction in common-envelope (0).
                          # ceflag = 3 activates de Kool common-envelope model
 tflag = 1                # tflag > 0 activates tidal circularisation (1)
@@ -45,12 +32,31 @@ pts2 = 0.01              # 演化步长: GB, CHeB, AGB, HeGB
 pts3 = 0.02              # 演化步长: HG, HeMS
 sigma = 265.0            # 超新星速度踢的麦克斯韦分布（ 190 km/s ）
 
-xi = 1.0             # 星风吸积中自旋比角动量的转移效率(1)
 
+# 数值常量
+mch = 1.44           # 钱德拉塞卡极限（太阳质量）
+pc = 3.08567758e18   # 秒差距 → 厘米
+yeardy = 365.25
+yearsc = 3.1557e7
+Msun = 1.9884e33     # 太阳质量（克）
+Rsun = 6.957e10      # 太阳半径(单位: 厘米)
+G = 6.6743e-8        # 引力常量(厘米克秒制)
+c = 2.99792458e10    # 光速(厘米克秒制)
+aursun = 215.0291    # 计算双星轨道间距中的一个常数(公式中所有单位转化为太阳单位)
+tol = 1e-7
 epsnov = 0.001
 eddfac = 1.0         # 物质转移的爱丁顿极限因子(1.0)
 gamma = -2.0
 ktype = instar()
+
+
+# 星风质量损失相关常数
+alpha_wind = 1.5         # Bondi-Hoyle 星风吸积因子 (3/2)
+beta_wind = 0.125        # 星风速度因子：正比于 vwind**2 (1/8)
+bwind = 0.0              # 星风增强质损参数（由于双星的潮汐作用）
+neta = 0.5               # Reimers 质量损失系数，（通常为 0.5 ）
+acc1 = 3.920659e8        # 风吸积常数
+xi = 1.0                 # 星风吸积中自旋比角动量的转移效率(1)
 
 
 # 星族合成数据数组（以类的形式保存）

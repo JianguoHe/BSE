@@ -2,6 +2,7 @@ import random
 import numpy as np
 from numba import njit
 from const import yearsc, Msun, G, c, pc, num_evolve
+from const import m1_min, m1_max, m2_min, m2_max, sep_min, sep_max
 import legwork as lw
 import astropy.units as u
 import astropy.coordinates.sky_coordinate as skycoord
@@ -23,13 +24,13 @@ def cal_Time(z):
 # 计算每组参数对总数的贡献Wb，即权重
 @njit
 def weight(M1, M2):
-    n_grid = (num_evolve / 12) ** (1 / 3)
-    delta_lnM1 = np.log(200) / (n_grid - 1)
-    delta_lnM2 = np.log(200) / (n_grid - 1)
-    delta_lna = np.log(1e4 / 3) / (n_grid - 1)
+    n_grid = num_evolve ** (1 / 3)
+    delta_lnM1 = np.log(m1_max / m1_min) / (n_grid - 1)
+    delta_lnM2 = np.log(m2_max / m2_min) / (n_grid - 1)
+    delta_lna = np.log(sep_max / sep_min) / (n_grid - 1)
     Phi_lnM1 = M1 * xi(M1)
     varphi_lnM2 = M2 / M1
-    Psi_lna = 0.12328
+    Psi_lna = 1 / np.log(sep_max / sep_min)
     Wb = Phi_lnM1 * varphi_lnM2 * Psi_lna * delta_lnM1 * delta_lnM2 * delta_lna
     return Wb
 
@@ -37,31 +38,37 @@ def weight(M1, M2):
 # 恒星的初始质量函数
 @njit
 def xi(M):
-    # Weisz et al. 2015
-    c = 0.2074
-    if 0.08 < M <= 0.5:
-        return c * M ** -1.3
-    elif 0.5 < M <= 1:
-        return c * M ** -2.3
-    elif 1 <= M <= 100:
-        return c * M ** -2.45
-    else:
-        return 0
-
     # Kroupa et al. 1993
-    # if M <= 0.1:
-    #     return 0
-    # elif 0.1 < M <= 0.5:
-    #     return 0.29056 * M ** -1.3
+    if M <= 0.1:
+        return 0
+    elif 0.1 < M <= 0.5:
+        return 0.29056 * M ** -1.3
+    elif 0.5 < M <= 1:
+        return 0.15571 * M ** -2.2
+    else:
+        return 0.15571 * M ** -2.7
+
+    # Weisz et al. 2015
+    # c = 0.2074
+    # if 0.08 < M <= 0.5:
+    #     return c * M ** -1.3
     # elif 0.5 < M <= 1:
-    #     return 0.15571 * M ** -2.2
+    #     return c * M ** -2.3
+    # elif 1 <= M <= 100:
+    #     return c * M ** -2.45
     # else:
-    #     return 0.15571 * M ** -2.7
+    #     return 0
+
+
+# 银河系内的恒星形成率
+@njit
+def SFR_Galaxy():
+    return 3e6
 
 
 # 计算 M31 星系在某一时刻的恒星形成率
 @njit
-def SFR(Time):
+def SFR_M31(Time):
     SFR = 0
     if 0 <= Time <= 6.1e3:
         SFR = 18
@@ -93,7 +100,7 @@ def SFR(Time):
         SFR = 0.81
     elif 1.36e4 < Time <= 1.4e4:
         SFR = 0.39
-    return SFR * 1e6
+    return SFR * 1e6   # unit: /Myr
 
 
 # 根据[Fe/H]计算金属丰度z (Bertelli et al. 1994)

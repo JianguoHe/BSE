@@ -85,7 +85,6 @@ class BinaryStar:
 
     def tide(self):
         a = 3
-        b = 4
 
 
     def chirp_mass(self):
