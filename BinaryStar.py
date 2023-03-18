@@ -93,3 +93,4 @@ class BinaryStar:
 
     def chirp_mass(self):
         return (self.star1.mass * self.star2.mass) ** 0.6 / (self.star1.mass + self.star2.mass) ** 0.2
+
