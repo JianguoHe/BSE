@@ -165,10 +165,10 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
             r = rgbf(mt, lum, zcnsts)
             rg = r
             # 计算核质量(对于核是否简并有不同的核质量公式)
-            # Star has a degenerate He core which grows on the GB
+            # 恒星在GB阶段拥有简并核, 且核的质量不断增长
             if mass <= zcnsts.zpars[2]:
                 mc = mcgbf(lum, GB, lums[6])
-            # Star has a non-degenerate He core which may grow, but only slightly, on the GB
+            # 恒星在GB阶段拥有非简并核, 核的质量轻微增长（BGB和HeI的核质量基本不怎么变）
             else:
                 tau = (aj - tscls[1])/(tscls[2] - tscls[1])
                 mcx = mcheif(mass, zcnsts.zpars[2], zcnsts.zpars[9], zcnsts)

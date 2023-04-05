@@ -15,6 +15,7 @@ from stellerwind import steller_wind
     ('Z', float64),  # unit: radius of sun
     ('sep', float64),  # unit: radius of sun
     ('tb', float64),  # 轨道周期, unit: year
+    ('omega', float64),  # 轨道周期, unit: year
     ('ecc', float64),
     ('jorb', float64),          # 轨道角动量
     ('q1', float64),          # 轨道角动量
@@ -83,7 +84,7 @@ class BinaryStar:
             self.decc_gw = - 8.315e-10 * term1 * term3 * self.ecc
 
 
-    def tide(self):
+    def tide_effect(self):
         a = 3
 
     def add(self):

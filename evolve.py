@@ -1245,7 +1245,7 @@ def evolve(kstar, mass0, mass, rad, lumin, massc, radc, menv, renv,
                                         output.bpp[jp, 3] = mass[j1]
                                         output.bpp[jp, 4] = float(kst)
                                         output.bpp[jp, 5] = float(kstar[j1])
-                        # 白矮星吸积富氢物质,
+                        # 白矮星吸积富氢物质
                         elif kstar[j1] <= 6 and 10 <= kstar[j2] <= 12:
                             # 持续吸积直到新星爆发, 同时吹散大部分的吸积物质
                             if dm1 / tb < 1.03e-07:
