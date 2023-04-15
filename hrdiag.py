@@ -10,7 +10,7 @@ from zfuncs import rpertf, rgbf, rminf, ragbf, rzahbf, rzhef, rhehgf, rhegbf
 from zfuncs import rpert1f, mctmsf, mcgbtf, mcgbf, mcheif, mcagbf
 
 
-# 用途: 确定恒星目前处于哪一个演化阶段(kw, age), 然后计算光度、半径、质量、核质量
+# 用途: 确定恒星目前处于哪一个演化阶段(kw, age), 然后计算光度、半径、核质量以及类型更新后的新质量
 # 通常当恒星进入一个新的阶段后, 某些变量会重置, 比如 kw, 对于特定的阶段(巨星、氦星、致密星), mass/mt 也会重置
 
 

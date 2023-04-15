@@ -79,6 +79,8 @@ class SingleStar:
                 self.dt = min(self.dt, dtt)
             self.jspin += djspin * self.dt
 
+
+
     # def evolve(self, force):
     #     # update velocity and position based on force
     #     self.velocity += force / self.mass * self.dt

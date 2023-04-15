@@ -379,6 +379,7 @@ def zcnsts_set(x):
     lums = star_return[6]
     GB = star_return[7]
 
+    # 这里zpars[9]和zpars[10]分别算的是质量为Mhef的恒星在BGB和HeI时的核质量
     x.zpars[9] = mcgbf(lums[3], GB, lums[6])
     x.zpars[10] = mcgbf(lums[4], GB, lums[6])
     # set the hydrogen and helium abundances

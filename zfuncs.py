@@ -516,7 +516,7 @@ def lbagbf(m, mhefl, x):
     return lbagb
 
 
-# 估算巨星分支上的半径
+# 估算巨星分支上的半径（作为质量和光度的函数）
 # [已校验] Hurley_2000: equation 5.2(46)
 @njit
 def rgbf(m, lum, x):

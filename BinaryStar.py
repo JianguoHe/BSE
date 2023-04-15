@@ -25,10 +25,11 @@ from stellerwind import steller_wind
     ('djorb_gw', float64),      # 引力波辐射引起轨道角动量变化
     ('decc_wind', float64),     # 星风引起的偏心率变化
     ('decc_gw', float64),       # 引力波辐射引起轨道角动量变化
+    ('decc_tide', float64),       # 引力波辐射引起轨道角动量变化
 ])
 class BinaryStar:
     def __init__(self, star1, star2, separation, eccentricity, state='detached', jorb=0,
-                 djorb_wind=0, djorb_gw=0, decc_wind=0, decc_gw=0):
+                 djorb_wind=0, djorb_gw=0, decc_wind=0, decc_gw=0, decc_tide=0):
         self.star1 = star1
         self.star2 = star2
         self.Z = star1.Z
@@ -44,6 +45,7 @@ class BinaryStar:
         self.djorb_gw = djorb_gw
         self.decc_wind = decc_wind
         self.decc_gw = decc_gw
+        self.decc_tide = decc_tide
         self.state = state
         self.cal_radius_rochelobe()
 
@@ -83,9 +85,14 @@ class BinaryStar:
             self.djorb_gw = - 8.315e-10 * term1 * term2 * self.jorb
             self.decc_gw = - 8.315e-10 * term1 * term3 * self.ecc
 
-
+    # 计算潮汐影响
     def tide_effect(self):
-        a = 3
+        for k in range(2):
+            if k == 0:
+                star = self.star1
+            else:
+                star = self.star2
+
 
     def add(self):
         b = 4
