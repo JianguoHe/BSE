@@ -369,17 +369,10 @@ def zcnsts_set(x):
     # finish Lzahb
     x.gbp[74] = lhefl * lHef(x.zpars[2], x)
 
-    kw = 0
-    tm = 0
-    tn = 0
-    tscls = np.zeros((1, 21)).flatten()
-    lums = np.zeros((1, 11)).flatten()
-    GB = lums.copy()
-    star_return = star(kw, x.zpars[2], x.zpars[2], tm, tn, tscls, lums, GB, x)
-    lums = star_return[6]
-    GB = star_return[7]
+    kw = 1
+    (tm, tn, tscls, lums, GB) = star(kw, x.zpars[2], x.zpars[2], x)
 
-    # 这里zpars[9]和zpars[10]分别算的是质量为Mhef的恒星在BGB和HeI时的核质量
+    # 这里zpars[9]和zpars[10]分别算的是质量为M_HeF的恒星在BGB和HeI时的核质量
     x.zpars[9] = mcgbf(lums[3], GB, lums[6])
     x.zpars[10] = mcgbf(lums[4], GB, lums[6])
     # set the hydrogen and helium abundances

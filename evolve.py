@@ -148,8 +148,7 @@ def evolve(kstar, mass0, mass, rad, lumin, massc, radc, menv, renv,
 
     for k in range(kmin, kmax + 1):
         age = tphys - epoch[k]
-        (kstar[k], mass0[k], mass[k], tm, tn, tscls, lums, GB) = star(
-            kstar[k], mass0[k], mass[k], tm, tn, tscls, lums, GB, zcnsts)
+        (tm, tn, tscls, lums, GB) = star(kstar[k], mass0[k], mass[k], zcnsts)
 
         (mass0[k], age, mass[k], tm, tn, tscls, lums, GB, rm, lum, kstar[k], mc, rc, me, re, k2) = hrdiag(
             mass0[k], age, mass[k], tm, tn, tscls, lums, GB, zcnsts, rm, lum, kstar[k], mc, rc, me, re, k2, kick)
@@ -435,8 +434,7 @@ def evolve(kstar, mass0, mass, rad, lumin, massc, radc, menv, renv,
                         if kstar[k] <= 2 or kstar[k] == 7:
                             m0 = mass0[k]
                             mass0[k] = mass[k]
-                            (kstar[k], mass0[k], mass[k], tm, tn, tscls, lums, GB) = star(
-                                kstar[k], mass0[k], mass[k], tm, tn, tscls, lums, GB, zcnsts)
+                            (tm, tn, tscls, lums, GB) = star(kstar[k], mass0[k], mass[k], zcnsts)
                             if kstar[k] == 2:
                                 if GB[9] < massc[k] or m0 > zcnsts.zpars[3]:
                                     mass0[k] = m0
@@ -485,7 +483,7 @@ def evolve(kstar, mass0, mass, rad, lumin, massc, radc, menv, renv,
                         # goto.one_four_zero
                         flag140 = True
                         break
-                    (kw, m0, mt, tm, tn, tscls, lums, GB) = star(kw, m0, mt, tm, tn, tscls, lums, GB, zcnsts)
+                    (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
 
                     (m0, age, mt, tm, tn, tscls, lums, GB, rm, lum, kw, mc, rc, me, re, k2) = hrdiag(
                         m0, age, mt, tm, tn, tscls, lums, GB, zcnsts, rm, lum, kw, mc, rc, me, re, k2, kick)
@@ -988,8 +986,7 @@ def evolve(kstar, mass0, mass, rad, lumin, massc, radc, menv, renv,
                             mass[j2] = mass[j2] + dm2
                             # Rejuvenate if the star is still on the main sequence.
                             mass0[j2] = mass[j2]
-                            (kstar[j2], mass0[j2], mass[j2], tmsnew, tn, tscls, lums, GB) = star(
-                                kstar[j2], mass0[j2], mass[j2], tmsnew, tn, tscls, lums, GB, zcnsts)
+                            (tmsnew, tn, tscls, lums, GB) = star(kstar[j2], mass0[j2], mass[j2], zcnsts)
                             # If the star has no convective core then the effective age decreases,
                             # otherwise it will become younger still.
                             if mass[j2] < 0.350 or mass[j2] > 1.250:
@@ -1003,8 +1000,7 @@ def evolve(kstar, mass0, mass, rad, lumin, massc, radc, menv, renv,
                             mass[j2] = mass[j2] + dm2
                             if kstar[j2] == 2:
                                 mass0[j2] = mass[j2]
-                                (kstar[j2], mass0[j2], mass[j2], tmsnew, tn, tscls, lums, GB) = star(
-                                    kstar[j2], mass0[j2], mass[j2], tmsnew, tn, tscls, lums, GB, zcnsts)
+                                (tmsnew, tn, tscls, lums, GB) = star(kstar[j2], mass0[j2], mass[j2], zcnsts)
                                 aj[j2] = tmsnew + tscls[1] * (aj[j2] - tms[j2]) / tbgb[j2]
                                 epoch[j2] = tphys - aj[j2]
                         elif kstar[j2] <= 12:
@@ -1450,15 +1446,13 @@ def evolve(kstar, mass0, mass, rad, lumin, massc, radc, menv, renv,
                         if kstar[j1] == 2 and mass0[j1] <= zcnsts.zpars[3]:
                             m0 = mass0[j1]
                             mass0[j1] = mass[j1]
-                            (kstar[j1], mass0[j1], mass[j1], tmsnew, tn, tscls, lums, GB) = star(
-                                kstar[j1], mass0[j1], mass[j1], tmsnew, tn, tscls, lums, GB, zcnsts)
+                            (tmsnew, tn, tscls, lums, GB) = star(kstar[j1], mass0[j1], mass[j1], zcnsts)
                             if GB[9] < massc[j1]:
                                 mass0[j1] = m0
                         if kstar[j2] == 2 and mass0[j2] <= zcnsts.zpars[3]:
                             m0 = mass0[j2]
                             mass0[j2] = mass[j2]
-                            (kstar[j2], mass0[j2], mass[j2], tmsnew, tn, tscls, lums, GB) = star(
-                                kstar[j2], mass0[j2], mass[j2], tmsnew, tn, tscls, lums, GB, zcnsts)
+                            (tmsnew, tn, tscls, lums, GB) = star(kstar[j2], mass0[j2], mass[j2], zcnsts)
                             if GB[9] < massc[j2]:
                                 mass0[j2] = m0
                         ecc = ecc - delet
@@ -1476,8 +1470,7 @@ def evolve(kstar, mass0, mass, rad, lumin, massc, radc, menv, renv,
                         oorb = 2 * np.pi / tb
 
                     if kstar[j1] <= 2 or kstar[j1] == 7:
-                        (kstar[j1], mass0[j1], mass[j1], tmsnew, tn, tscls, lums, GB) = star(
-                            kstar[j1], mass0[j1], mass[j1], tmsnew, tn, tscls, lums, GB, zcnsts)
+                        (tmsnew, tn, tscls, lums, GB) = star(kstar[j1], mass0[j1], mass[j1], zcnsts)
                         if kstar[j1] == 2:
                             aj[j1] = tmsnew + (tscls[1] - tmsnew) * (aj[j1] - tms[j1]) / (tbgb[j1] - tms[j1])
                         else:
@@ -1485,8 +1478,7 @@ def evolve(kstar, mass0, mass, rad, lumin, massc, radc, menv, renv,
                         epoch[j1] = tphys - aj[j1]
 
                     if kstar[j2] <= 2 or kstar[j2] == 7:
-                        (kstar[j2], mass0[j2], mass[j2], tmsnew, tn, tscls, lums, GB) = star(
-                            kstar[j2], mass0[j2], mass[j2], tmsnew, tn, tscls, lums, GB, zcnsts)
+                        (tmsnew, tn, tscls, lums, GB) = star(kstar[j2], mass0[j2], mass[j2], zcnsts)
                         if kstar[j2] == 2:
                             aj[j2] = tmsnew + (tscls[1] - tmsnew) * (aj[j2] - tms[j2]) / (tbgb[j2] - tms[j2])
                         elif (mass[j2] < 0.350 or mass[j2] > 1.250) and kstar[j2] != 7:
@@ -1506,7 +1498,7 @@ def evolve(kstar, mass0, mass, rad, lumin, massc, radc, menv, renv,
                             flag140 = True
                             break
                         kw = kstar[k]
-                        (kw, m0, mt, tm, tn, tscls, lums, GB) = star(kw, m0, mt, tm, tn, tscls, lums, GB, zcnsts)
+                        (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
                         (m0, age, mt, tm, tn, tscls, lums, GB, rm, lum, kw, mc, rc, me, re, k2) = hrdiag(
                             m0, age, mt, tm, tn, tscls, lums, GB, zcnsts, rm, lum, kw, mc, rc, me, re, k2, kick)
 

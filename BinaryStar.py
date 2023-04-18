@@ -93,12 +93,16 @@ class BinaryStar:
             else:
                 star = self.star2
 
-
-    def add(self):
-        b = 4
-
-    # def 
-
+    # 双星的chirp mass
     def chirp_mass(self):
         return (self.star1.mass * self.star2.mass) ** 0.6 / (self.star1.mass + self.star2.mass) ** 0.2
+
+    # 演化双星
+    def evolve(self):
+        # 考虑星风的影响（质量/自旋角动量/轨道角动量的减少/增加）
+        # self.steller_wind()
+        # 考虑双星的磁制动影响（自旋角动量的减少）
+        self.star1.magnetic_braking()
+        self.star2.magnetic_braking()
+
 

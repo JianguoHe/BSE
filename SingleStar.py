@@ -33,12 +33,13 @@ from stellerwind import steller_wind
     ('dml_wind', float64),      # 星风质量损失
     ('dma_wind', float64),      # 星风质量吸积
     ('djspin_wind', float64),    # 星风提取的自旋角动量
+    ('djspin_mb', float64),      # 磁制动提取的自旋角动量
 ])
 class SingleStar:
     def __init__(self, type, Z, mass, R=0, L=0, dt=0, Teff=0, spin=0, jspin=0, rochelobe=0,
                  mass_core=0, mass_he_core=0, mass_c_core=0, mass_o_core=0, mass_co_core=0, mass_envelop=0,
                  radius_core=0, radius_he_core=0, radius_c_core=0, radius_o_core=0, radius_co_core=0,
-                 dml_wind=0, dma_wind=0, djspin_wind=0):
+                 dml_wind=0, dma_wind=0, djspin_wind=0, djspin_mb=0):
         self.type = type
         self.mass = mass
         self.R = R
@@ -64,6 +65,7 @@ class SingleStar:
         self.dml_wind = dml_wind
         self.dma_wind = dma_wind
         self.djspin_wind = djspin_wind
+        self.djspin_mb = djspin_mb
 
     # def massloss_wind(self):
     #     self.massloss_wind = mlwind()
@@ -73,11 +75,13 @@ class SingleStar:
         # 计算有明显对流包层的恒星因磁制动损失的自旋角动量, 包括主序星(M < 1.25)、靠近巨星分支的HG恒星以及巨星, 不包括完全对流主序星
         if self.mass > 0.35 and self.type < 10:
             djspin = -5.83e-16 * self.mass_envelop * (self.R * self.spin) ** 3 / self.mass
-            # 限制最大3%的磁制动损失的角动量。这可以保证迭代次数不会超过最大值20000, 当然2%也不会影响演化结果
-            if djspin > tiny:
-                dtt = 0.03 * self.jspin / abs(djspin)
-                self.dt = min(self.dt, dtt)
-            self.jspin += djspin * self.dt
+        else:
+            djspin = 0
+        # 限制最大3%的磁制动损失的角动量。这可以保证迭代次数不会超过最大值20000, 当然2%也不会影响演化结果
+        if djspin > tiny:
+            dtt = 0.03 * self.jspin / abs(djspin)
+            self.dt = min(self.dt, dtt)
+        self.jspin += djspin * self.dt
 
 
 

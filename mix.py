@@ -8,16 +8,6 @@ from numba import njit
 # 模拟恒星碰撞
 @njit
 def mix(mass0, mass, aj, kstar, zcnsts):
-    # 设置初始值
-    tm1 = 0   # 不同恒星的主序时间
-    tm2 = 0
-    tm3 = 0
-    # 以下几个变量只用于本程序内的过程计算，不影响外部程序
-    tn = 0
-    tscls = np.zeros((1, 21)).flatten()
-    lums = np.zeros((1, 11)).flatten()
-    GB = lums.copy()
-
     # Define global indices with body j1 being most evolved.(演化历程较深的, 即 kw 较大)
     if kstar[1] >= kstar[2]:
         j1 = 1
@@ -35,13 +25,13 @@ def mix(mass0, mass, aj, kstar, zcnsts):
     mass01 = mass0[j1]
     mass1 = mass[j1]
     age1 = aj[j1]
-    (k1, mass01, mass1, tm1, tn, tscls, lums, GB) = star(k1, mass01, mass1, tm1, tn, tscls, lums, GB, zcnsts)
+    (tm1, tn, tscls, lums, GB) = star(k1, mass01, mass1, zcnsts)
 
     # Obtain time scales for second star.
     mass02 = mass0[j2]
     mass2 = mass[j2]
     age2 = aj[j2]
-    (k2, mass02, mass2, tm2, tn, tscls, lums, GB) = star(k2, mass02, mass2, tm2, tn, tscls, lums, GB, zcnsts)
+    (tm2, tn, tscls, lums, GB) = star(k2, mass02, mass2, zcnsts)
 
     # Check for planetary systems - which is defined as HeWDs and low-mass WDs!
     if k1 == 10 and mass1 < 0.05:
@@ -74,7 +64,7 @@ def mix(mass0, mass, aj, kstar, zcnsts):
         # Specify new age based on complete mixing.
         if k1 == 7:
             kw = 7
-        (kw, mass03, mass3, tm3, tn, tscls, lums, GB) = star(kw, mass03, mass3, tm3, tn, tscls, lums, GB, zcnsts)
+        (tm3, tn, tscls, lums, GB) = star(kw, mass03, mass3, zcnsts)
         age3 = 0.1 * tm3 * (age1 * mass1 / tm1 + age2 * mass2 / tm2) / mass3
     elif icase == 3 or icase == 6 or icase == 9:
         mc3 = mass1
@@ -84,7 +74,7 @@ def mix(mass0, mass, aj, kstar, zcnsts):
         age3 = age1 / tm1
         (mc3, mass3, kw, mass03, age3) = gntage(mc3, mass3, kw, zcnsts, mass03, age3)
     elif icase == 7:
-        (kw, mass03, mass3, tm3, tn, tscls, lums, GB) = star(kw, mass03, mass3, tm3, tn, tscls, lums, GB, zcnsts)
+        (tm3, tn, tscls, lums, GB) = star(kw, mass03, mass3, zcnsts)
         age3 = tm3 * (age2 * mass2 / tm2) / mass3
     elif icase <= 12:
         # Ensure that a new WD has the initial mass set correctly.

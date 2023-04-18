@@ -1,7 +1,8 @@
 from zfuncs import lzamsf, lzahbf, lzhef, ltmsf, lbgbf, lHeIf, lHef, lbagbf, lmcgbf
-from zfuncs import tbgbf, thookf, tHef, themsf, mcgbf, mcagbf, mcheif, mcgbtf
+from zfuncs import tbgbf, thook_div_tBGB, tHef, themsf, mcgbf, mcagbf, mcheif, mcgbtf
 from const import mch
 from numba import njit
+import numpy as np
 
 
 # 用途: 推导不同演化阶段的时标、标志性光度、巨星分支参数
@@ -33,13 +34,18 @@ from numba import njit
 
 
 @njit
-def star(kw, mass, mt, tm, tn, tscls, lums, GB, zcnsts):
-    # 输入 kw, mass, mt, zcnsts
-    # 输出 tm, tn, tscls(20), lums(10), GB(10)
+def star(kw, mass0, mt, zcnsts):
+    # 输入 kw, mass0, mt, zcnsts
 
-    mass0 = mass
-    if mass0 > 100:
-        mass = 100
+    # 输出参数
+    tm = 0                                 # 主序时间
+    tn = 0                                 # 核燃烧时间
+    tscls = np.zeros((1, 21)).flatten()    # 到达不同阶段的时标
+    lums = np.zeros((1, 11)).flatten()     # 特征光度
+    GB = np.zeros((1, 11)).flatten()       # 巨星分支参数
+
+    # 限定拟合公式的质量在 100Msun 以下
+    mass = min(mass0, 100)
 
     if 7 <= kw <= 9:
         # 估算 He 星的主序时间
@@ -73,17 +79,17 @@ def star(kw, mass, mt, tm, tn, tscls, lums, GB, zcnsts):
             tscls[14] = tscls[5] - (1 / ((GB[6] - 1) * GB[8] * GB[3])) * (mcmax ** (1 - GB[6]))
         tscls[14] = max(tscls[14], tm)
         tn = tscls[14]
-        return kw, mass0, mt, tm, tn, tscls, lums, GB    # 结束此函数
+        return tm, tn, tscls, lums, GB    # 结束此函数
 
     if kw >= 10:
         tm = 1e10
         tscls[1] = tm
         tn = 1e10
-        return kw, mass0, mt, tm, tn, tscls, lums, GB    # 结束此函数
+        return tm, tn, tscls, lums, GB    # 结束此函数
 
     # 主序和 BGB 时间
     tscls[1] = tbgbf(mass, zcnsts)
-    tm = max(zcnsts.zpars[8], thookf(mass, zcnsts)) * tscls[1]
+    tm = max(zcnsts.zpars[8], thook_div_tBGB(mass, zcnsts)) * tscls[1]
     # 零龄主序和主序末尾的光度
     lums[1] = lzamsf(mass, zcnsts)
     lums[2] = ltmsf(mass, zcnsts)
@@ -118,7 +124,7 @@ def star(kw, mass, mt, tm, tn, tscls, lums, GB, zcnsts):
         tscls[3] = 0.1 * tscls[1]
         lums[3] = lbgbf(mass, zcnsts)
         tn = 1e10
-        return kw, mass0, mt, tm, tn, tscls, lums, GB  # 结束此函数
+        return tm, tn, tscls, lums, GB   # 结束此函数
 
     # 中小质量恒星, 会经历FGB阶段
     if mass <= zcnsts.zpars[3]:
@@ -210,7 +216,7 @@ def star(kw, mass, mt, tm, tn, tscls, lums, GB, zcnsts):
     tscls[14] = max(tbagb, tscls[14])
     if mass > 100:
         tn = tscls[2]
-        return kw, mass0, mt, tm, tn, tscls, lums, GB  # 结束此函数
+        return tm, tn, tscls, lums, GB   # 结束此函数
 
     # 计算核时标: 不考虑进一步的质量损失时, 耗尽核燃料的时间。我们定义 Mc = Mt 的时间为 Tn, 这也会用于确定所需的时间步长
     # 注意, 当某些恒星达到 Mc = Mt 之后还会有一个氦星的演化时间, 后者也是一个核燃烧阶段, 但并不包括在 Tn 内
@@ -262,7 +268,7 @@ def star(kw, mass, mt, tm, tn, tscls, lums, GB, zcnsts):
                 else:
                     tn = tscls[2] + tscls[3] * ((mt - mc2) / (mcbagb - mc2))
     tn = min(tn, tscls[14])
-    return kw, mass0, mt, tm, tn, tscls, lums, GB    # 结束此函数
+    return tm, tn, tscls, lums, GB    # 结束此函数
 
 
 

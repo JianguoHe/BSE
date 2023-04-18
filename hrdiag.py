@@ -4,39 +4,39 @@ from star import star
 from mrenv import mrenv
 from supernova import supernova
 from const import SNtype, ifflag, nsflag, wdflag, mxns, mch, Rsun, tiny
-from zfuncs import thookf, tblf, lalphaf, lbetaf, lnetaf, lpertf, lgbtf
+from zfuncs import thook_div_tBGB, tblf, lalphaf, lbetaf, lnetaf, lpertf, lgbtf
 from zfuncs import lmcgbf, lzhef, lpert1f, rzamsf, rtmsf, ralphaf, rbetaf, rgammaf
 from zfuncs import rpertf, rgbf, rminf, ragbf, rzahbf, rzhef, rhehgf, rhegbf
-from zfuncs import rpert1f, mctmsf, mcgbtf, mcgbf, mcheif, mcagbf
+from zfuncs import rpert1f, mcTMS_div_mcEHG, mcgbtf, mcgbf, mcheif, mcagbf
 
 
-# 用途: 确定恒星目前处于哪一个演化阶段(kw, age), 然后计算光度、半径、核质量以及类型更新后的新质量
+# 用途: 确定恒星目前处于哪一个演化阶段(kw, age), 然后计算当前光度、半径、核质量、恒星类型
 # 通常当恒星进入一个新的阶段后, 某些变量会重置, 比如 kw, 对于特定的阶段(巨星、氦星、致密星), mass/mt 也会重置
 
 
 # 恒星光度/演化时间
-# mass：  初始质量 (zero-age stellar mass)
-# aj：    当前时间（Myr）
-# mt：    当前质量 (used for R)
-# tm：    主序时间
-# tn：    核燃烧时间
-# tscls： 到达不同阶段的时标
-# lums：  特征光度
-# GB：    巨星分支参数
-# zpars： 区分各种质量区间的参数
-# r：     恒星半径（太阳单位）
-# te：    有效温度（suppressed)
-# kw：    恒星类型（ 0 - 15 ）
-# mc：    核质量
+# mass:      初始质量 (zero-age stellar mass)
+# aj:        当前时间 (Myr)
+# mt:        当前质量 (used for R)
+# tm:        主序时间
+# tn:        核燃烧时间
+# tscls:     到达不同阶段的时标
+# lums:      特征光度
+# GB:        巨星分支参数
+# zcnsts:    区分各种质量区间的参数
+# r:         恒星半径（太阳单位）
+# te:        有效温度（suppressed)
+# kw:        恒星类型（ 0 - 15 ）
+# mc:        核质量
 
 
 @njit
 def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, menv, renv, k2, kick):
     # 设置常数
     mlp = 12.0
-    taumin = 5e-8      # 为了防止浮点下溢设的最小值, 不知道是否可以删去
     ahe = 4
     aco = 16
+    taumin = 5e-8  # 为了防止计算主序光度/半径时浮点下溢设的最小值（公式中的幂方因子 tau**40 可能超过Python的浮点数范围）
 
     # Make evolutionary changes to stars that have not reached KW > 5.
     mass0 = mass
@@ -56,48 +56,51 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
 
         # 主序和赫氏空隙两个阶段
         if aj < tscls[1]:
+            # 计算 EHG 时的半径
             rg = rgbf(mt, lums[3], zcnsts)
-            # 主序阶段(通常认为这个阶段核质量为 0)
+            # 主序阶段
             if aj < tm:
+                # 通常认为主序时核与包层的轮廓不够明显, 即核质量为0
                 mc = 0.0
                 tau = aj / tm
-                thook = thookf(mass, zcnsts) * tscls[1]
+                thook = thook_div_tBGB(mass, zcnsts) * tscls[1]
+
+                # 定义湍动时标, 模拟hook的演化
                 epsilon = 0.01
                 tau1 = min(1.0, aj / thook)
                 tau2 = max(0.0, min(1.0, (aj - (1.0 - epsilon) * thook) / (epsilon * thook)))
 
                 # 计算主序阶段光度
                 delta_L = lpertf(mass, zcnsts.zpars[1], zcnsts)
-                dtau = tau1 ** 2 - tau2 ** 2
                 alpha_L = lalphaf(mass, zcnsts)
                 beta_L = lbetaf(mass, zcnsts)
-                eta = lnetaf(mass, zcnsts)
-                lx = np.log10(lums[2]/lums[1])
-                # Note that the use of taumin is a slightly pedantic attempt to avoid floating point underflow.
-                # It is overkill!
+                eta_L = lnetaf(mass, zcnsts)
+                term1 = alpha_L * tau + (np.log10(lums[2]/lums[1]) - alpha_L) * tau ** 2
+                term2 = beta_L * tau ** eta_L - beta_L * tau ** 2
+                term3 = delta_L * (tau1 ** 2 - tau2 ** 2)
                 if tau > taumin:
-                    xx = alpha_L * tau + beta_L * tau ** eta + (lx - alpha_L - beta_L) * tau ** 2 - delta_L * dtau
+                    lum = lums[1] * 10 ** (term1 + term2 - term3)
                 else:
-                    xx = alpha_L * tau + (lx - alpha_L) * tau ** 2 - delta_L * dtau
-                lum = lums[1] * 10 ** xx
+                    lum = lums[1] * 10 ** (term1 - term3)
 
                 # 计算主序阶段半径
                 delta_R = rpertf(mass, zcnsts.zpars[1], zcnsts)
-                dtau = tau1 ** 3 - tau2 ** 3
                 alpha_R = ralphaf(mass, zcnsts)
                 beta_R = rbetaf(mass, zcnsts)
-                gamma = rgammaf(mass, zcnsts)
-                rx = np.log10(rtms / rzams)
+                gamma_R = rgammaf(mass, zcnsts)
+                term1 = alpha_R * tau + (np.log10(rtms / rzams) - alpha_R) * tau ** 3
+                term2 = beta_R * tau ** 10 - beta_R * tau ** 3
+                term3 = gamma_R * tau ** 40 - gamma_R * tau ** 3
+                term4 = delta_R * (tau1 ** 3 - tau2 ** 3)
                 if tau > taumin:
-                    xx = alpha_R * tau + beta_R * tau ** 10 + gamma * tau ** 40 + (
-                                rx - alpha_R - beta_R - gamma) * tau ** 3 - delta_R * dtau
+                    r = rzams * 10.0 ** (term1 + term2 + term3 - term4)
                 else:
-                    xx = alpha_R * tau + (rx - alpha_R) * tau ** 3 - delta_R * dtau
-                r = rzams * 10.0 ** xx
+                    r = rzams * 10.0 ** (term1 - term4)
 
                 # This following is given by Chris for low mass MS stars which will be substantially degenerate.
                 # We need the Hydrogen abundance X, which we calculate according to X = 0.76 - 3*Z,
                 # the helium abundance Y, is calculated according to Y = 0.24 + 2*Z
+                # 【疑问: 没找到出处】
                 if mass < zcnsts.zpars[1] - 0.3:
                     kw = 0
                     r = max(r, 0.0258 * ((1.0 + zcnsts.zpars[11]) ** (5.0 / 3.0)) * (mass ** (-1.0 / 3.0)))
@@ -114,7 +117,7 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
                     mcEHG = mcheif(mass, zcnsts.zpars[2], zcnsts.zpars[9], zcnsts)
                 else:
                     mcEHG = mcheif(mass, zcnsts.zpars[2], zcnsts.zpars[10], zcnsts)
-                rho = mctmsf(mass)
+                rho = mcTMS_div_mcEHG(mass)
                 tau = (aj - tm) / (tscls[1] - tm)
                 mc = ((1.0 - tau) * rho + tau) * mcEHG
                 mc = max(mc, mcx)
@@ -123,15 +126,15 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
                     aj = 0.0
                     # 非简并氦核, 则演变为零龄 HeMS
                     if mass > zcnsts.zpars[2]:
-                        mc = 0.0
-                        mass = mt
                         kw = 7
-                        (kw, mass, mt, tm, tn, tscls, lums, GB) = star(kw, mass, mt, tm, tn, tscls, lums, GB, zcnsts)
+                        mass = mt
+                        mc = 0.0
+                        (tm, tn, tscls, lums, GB) = star(kw, mass, mt, zcnsts)
                     # 简并氦核, 则演变为零龄 HeWD
                     else:
-                        mc = mt
-                        mass = mt
                         kw = 10
+                        mass = mt
+                        mc = mt
                 else:
                     # 计算赫氏空隙阶段光度
                     lum = lums[2] * (lums[3] / lums[2]) ** tau
@@ -182,7 +185,7 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
                     kw = 7
                     mass = mt
                     mc = 0.0
-                    (kw, mass, mt, tm, tn, tscls, lums, GB) = star(kw, mass, mt, tm, tn, tscls, lums, GB, zcnsts)
+                    (tm, tn, tscls, lums, GB) = star(kw, mass, mt, zcnsts)
                 # 简并氦核, 则演变为零龄 HeWD
                 else:
                     kw = 10
@@ -193,7 +196,7 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
         elif aj < tbagb:
             if kw == 3 and mass <= zcnsts.zpars[2]:
                 mass = mt
-                (kw, mass, mt, tm, tn, tscls, lums, GB) = star(kw, mass, mt, tm, tn, tscls, lums, GB, zcnsts)
+                (tm, tn, tscls, lums, GB) = star(kw, mass, mt, zcnsts)
                 aj = tscls[2]
 
             # 计算核质量
@@ -291,7 +294,7 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
                 kw = 7
                 tau = (aj - tscls[2])/tscls[3]
                 mass = mt   # 这里把当前的(核)质量 mt 近似处理为氦星的初始质量 mass, 因为后者的实际值无法计算
-                (kw, mass, mt, tm, tn, tscls, lums, GB) = star(kw, mass, mt, tm, tn, tscls, lums, GB, zcnsts)
+                (tm, tn, tscls, lums, GB) = star(kw, mass, mt, zcnsts)
                 aj = tau * tm
             else:
                 kw = 4
@@ -319,7 +322,7 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
                     mt = mc
                     mass = mt
                     mc = mcx
-                    (kw, mass, mt, tm, tn, tscls, lums, GB) = star(kw, mass, mt, tm, tn, tscls, lums, GB, zcnsts)
+                    (tm, tn, tscls, lums, GB) = star(kw, mass, mt, zcnsts)
                     if mc <= GB[7]:
                         aj = tscls[4] - (1.0 / ((GB[5] - 1.0) * GB[8] * GB[4])) * (mc ** (1.0 - GB[5]))
                     else:
@@ -533,11 +536,11 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
         tau = (aj - tscls[2]) / tscls[3]
         # 先把此时的核当作是一个氦主序, 计算核的半径和光度
         kw_temp = 7
-        (kw_temp, mc, mc, tm, tn, tscls, lums, GB) = star(kw_temp, mc, mc, tm, tn, tscls, lums, GB, zcnsts)
+        (tm, tn, tscls, lums, GB) = star(kw_temp, mc, mc, zcnsts)
         lc = lums[1] * (1.0 + 0.45 * tau + max(0.0, 0.85 - 0.08 * mc) * tau ** 2)
         rc = rzhef(mc) * (1.0 + max(0.0, 0.4 - 0.22 * np.log10(mc)) * (tau - tau ** 6))
         # 恢复恒星本身类型对应的特征光度/时标
-        (kw, mass, mt, tm, tn, tscls, lums, GB) = star(kw, mass, mt, tm, tn, tscls, lums, GB, zcnsts)
+        (tm, tn, tscls, lums, GB) = star(kw, mass, mt, zcnsts)
     # EAGB 阶段
     elif kw == 5:
         # 先把此时的核当作是一个氦巨星, 计算核的半径和光度
@@ -545,14 +548,14 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
         tbagb = tscls[2] + tscls[3]
         if tn > tbagb:
             tau = 3.0 * (aj - tbagb) / (tn - tbagb)
-        (kw_temp, mc, mc, tm, tn, tscls, lums, GB) = star(kw_temp, mc, mc, tm, tn, tscls, lums, GB, zcnsts)
+        (tm, tn, tscls, lums, GB) = star(kw_temp, mc, mc, zcnsts)
         lc = lmcgbf(mcx, GB)
         if tau < 1.0:
             lc = lums[2] * (lc / lums[2]) ** tau
         rc = rzhef(mc)
         rc = min(rhehgf(mc, lc, rc, lums[2]), rhegbf(lc))
         # 恢复恒星本身类型对应的特征光度/时标
-        (kw, mass, mt, tm, tn, tscls, lums, GB) = star(kw, mass, mt, tm, tn, tscls, lums, GB, zcnsts)
+        (tm, tn, tscls, lums, GB) = star(kw, mass, mt, zcnsts)
     # TPAGB/HeHG/HeGB
     elif kw == 6 or 8 <= kw <= 9:
         if wdflag:

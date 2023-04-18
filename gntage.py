@@ -14,11 +14,6 @@ def gntage(mc, mt, kw, zcnsts, m0, aj):
     flag2 = True    # 仅供程序中跳转功能用
     flag3 = True    # 仅供程序中跳转功能用
 
-    tm = 0
-    tn = 0
-    tscls = np.zeros((1, 21)).flatten()
-    lums = np.zeros((1, 11)).flatten()
-    GB = lums.copy()
     jmax = 30
 
     if kw == 4:
@@ -44,7 +39,7 @@ def gntage(mc, mt, kw, zcnsts, m0, aj):
         if m0 < tiny:
             kw = 14
         else:
-            (kw, m0, mt, tm, tn, tscls, lums, GB) = star(kw, m0, mt, tm, tn, tscls, lums, GB, zcnsts)
+            (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
             aj = tscls[13]
 
     if kw == 5:
@@ -52,7 +47,7 @@ def gntage(mc, mt, kw, zcnsts, m0, aj):
         if m0 < tiny:
             kw = 14
         else:
-            (kw, m0, mt, tm, tn, tscls, lums, GB) = star(kw, m0, mt, tm, tn, tscls, lums, GB, zcnsts)
+            (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
             aj = tscls[2] + tscls[3]
 
     while kw == 4:
@@ -90,7 +85,7 @@ def gntage(mc, mt, kw, zcnsts, m0, aj):
                 if j == jmax:
                     m0 = mt
                     aj = 0.0
-        (kw, m0, mt, tm, tn, tscls, lums, GB) = star(kw, m0, mt, tm, tn, tscls, lums, GB, zcnsts)
+        (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
         aj = tscls[2] + aj * tscls[3]
         break
 
@@ -103,7 +98,7 @@ def gntage(mc, mt, kw, zcnsts, m0, aj):
             m0 = mheif(mc,zcnsts.zpars[2],zcnsts.zpars[9], zcnsts)
         else:
             m0 = zcnsts.zpars[2]
-            (kw, m0, mt, tm, tn, tscls, lums, GB) = star(kw, m0, mt, tm, tn, tscls, lums, GB, zcnsts)
+            (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
             lum = lmcgbf(mc,GB)
             j = 0
             while True:
@@ -117,13 +112,13 @@ def gntage(mc, mt, kw, zcnsts, m0, aj):
                     m0 = zcnsts.zpars[2]
                     m0 = max(m0, mt)
                     break
-        (kw, m0, mt, tm, tn, tscls, lums, GB) = star(kw, m0, mt, tm, tn, tscls, lums, GB, zcnsts)
+        (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
         aj = tscls[1] + 1.0e-6 * (tscls[2] - tscls[1])
 
     if kw == 8 or kw == 9:
         kw = 8
         mmin = mc
-        (kw, m0, mt, tm, tn, tscls, lums, GB) = star(kw, m0, mt, tm, tn, tscls, lums, GB, zcnsts)
+        (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
         mcx = mcgbf(lums[2], GB, lums[6])
         if mcx >= mc:
             m0 = mt
@@ -132,7 +127,7 @@ def gntage(mc, mt, kw, zcnsts, m0, aj):
             f = mcx - mc
             mmax = mt
             for j in range(1, jmax+1):
-                (kw, m0, mt, tm, tn, tscls, lums, GB) = star(kw, m0, mt, tm, tn, tscls, lums, GB, zcnsts)
+                (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
                 mcy = mcgbf(lums[2], GB, lums[6])
                 if mcy > mc:
                     break
@@ -150,7 +145,7 @@ def gntage(mc, mt, kw, zcnsts, m0, aj):
             for j in range(1, jmax+1):
                 dm = 0.5 * dm
                 mmid = m0 + dm
-                (kw, m0, mt, tm, tn, tscls, lums, GB) = star(kw, m0, mt, tm, tn, tscls, lums, GB, zcnsts)
+                (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
                 mcy = mcgbf(lums[2], GB, lums[6])
                 fmid = mcy - mc
                 if fmid < 0.0:
@@ -161,7 +156,7 @@ def gntage(mc, mt, kw, zcnsts, m0, aj):
                     m0 = mt
                     break
             break
-        (kw, m0, mt, tm, tn, tscls, lums, GB) = star(kw, m0, mt, tm, tn, tscls, lums, GB, zcnsts)
+        (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
         aj = tm + 1e-10 * tm
 
     if kw == 14:
@@ -169,7 +164,7 @@ def gntage(mc, mt, kw, zcnsts, m0, aj):
         m0 = mt
         mcy = mcagbf(m0, zcnsts)
         aj = mc / mcy
-        (kw, m0, mt, tm, tn, tscls, lums, GB) = star(kw, m0, mt, tm, tn, tscls, lums, GB, zcnsts)
+        (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
         if m0 <= zcnsts.zpars[2]:
             mcx = mcgbf(lums[4], GB, lums[6])
         else:

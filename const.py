@@ -5,33 +5,34 @@ from numba.experimental import jitclass
 
 
 # 星族合成参数
-num_evolve = 1e5         # 演化的双星数量
-m1_min = 5               # 恒星1的最小质量
-m1_max = 50              # 恒星1的最大质量
-m2_min = 0.5             # 恒星2的最小质量
-m2_max = 50              # 恒星2的最大质量
-sep_min = 3              # 最小轨道间距
-sep_max = 1e4            # 最大轨道间距
+num_evolve = 1e5                  # 演化的双星数量
+m1_min = 5                        # 恒星1的最小质量
+m1_max = 50                       # 恒星1的最大质量
+m2_min = 0.5                      # 恒星2的最小质量
+m2_max = 50                       # 恒星2的最大质量
+sep_min = 3                       # 最小轨道间距
+sep_max = 1e4                     # 最大轨道间距
 
 
 # 演化参数
-alpha = 1.0              # 公共包层效率参数(1)
-SNtype = 1               # 超新星类型(1,2,3分别对应于rapid,delayed,stochastic)
-tiny = 1e-14             # 小量
-hewind = 1.0             # 氦星质损因子（通常为 1 ）
-ceflag = 3               # ceflag > 0 activates spin-energy correction in common-envelope (0).
-                         # ceflag = 3 activates de Kool common-envelope model
-tflag = 1                # tflag > 0 activates tidal circularisation (1)
-ifflag = False           # ifflag(Ture) uses WD IFMR of HPE, 1995, MNRAS, 272, 800 (0).
-wdflag = False           # wdflag(Ture) uses modified-Mestel cooling for WDs (0).
-bhflag = True            # bhflag(Ture) allows velocity kick at BH formation (0).
-nsflag = True            # nsflag(Ture) takes NS/BH mass from Fryer et al. 2012, ApJ, 749, 91.
-mxns = 2.5               # 最大中子星质量
-pts1 = 0.05              # 演化步长: MS(当前阶段的演化时间 * pts = 当前阶段的演化步长)
-pts2 = 0.01              # 演化步长: GB, CHeB, AGB, HeGB
-pts3 = 0.02              # 演化步长: HG, HeMS
-sigma = 265.0            # 超新星速度踢的麦克斯韦分布（ 190 km/s ）
-
+alpha = 1.0                       # 公共包层效率参数(1)
+SNtype = 1                        # 超新星类型(1,2,3分别对应于rapid,delayed,stochastic)
+tiny = 1e-14                      # 小量
+hewind = 1.0                      # 氦星质损因子（通常为 1 ）
+ceflag = 3                        # ceflag > 0 activates spin-energy correction in common-envelope (0).
+                                  # ceflag = 3 activates de Kool common-envelope model
+tflag = 1                         # tflag > 0 activates tidal circularisation (1)
+ifflag = False                    # ifflag(Ture) uses WD IFMR of HPE, 1995, MNRAS, 272, 800 (0).
+wdflag = False                    # wdflag(Ture) uses modified-Mestel cooling for WDs (0).
+bhflag = True                     # bhflag(Ture) allows velocity kick at BH formation (0).
+nsflag = True                     # nsflag(Ture) takes NS/BH mass from Fryer et al. 2012, ApJ, 749, 91.
+mxns = 2.5                        # 最大中子星质量
+pts1 = 0.05                       # 演化步长: MS(当前阶段的演化时间 * pts = 当前阶段的演化步长)
+pts2 = 0.01                       # 演化步长: GB, CHeB, AGB, HeGB
+pts3 = 0.02                       # 演化步长: HG, HeMS
+sigma = 265.0                     # 超新星速度踢的麦克斯韦分布（ 190 km/s ）
+mb_model = 'Rappaport1983'        # 磁制动模型【'Hurley2002', 'Rappaport1983'】
+mb_gamma = 3                      # 磁制动指数
 
 # 数值常量
 mch = 1.44           # 钱德拉塞卡极限（太阳质量）

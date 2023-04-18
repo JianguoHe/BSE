@@ -8,7 +8,7 @@ star2 = SingleStar(type=1, Z=0.02, mass=0.45)
 binary = BinaryStar(star1, star2, separation=20, eccentricity=0)
 
 # 测试函数
-M_chrip = binary.chirp_mass()
+binary.evolve()
 
-print(M_chrip)
+
 

@@ -313,9 +313,9 @@ def tbgdzf(m, x):
 # (for those models that have one). Note that this function is only valid for M > Mhook.
 # [已校验] Hurley_2000: equation 5.1(7)
 @njit
-def thookf(m, x):
-    thook = max(0.5, 1 - 0.01 * max(x.msp[22] / m ** x.msp[23], x.msp[24] + x.msp[25] / m ** x.msp[26]))
-    return thook
+def thook_div_tBGB(m, x):
+    value = max(0.5, 1 - 0.01 * max(x.msp[22] / m ** x.msp[23], x.msp[24] + x.msp[25] / m ** x.msp[26]))
+    return value
 
 
 # 估算主序末尾的光度
@@ -576,9 +576,9 @@ def ragbdf(m, lum, mhelf, x):
 # i.e. this must be multiplied by the BGB value (see below) to give the actual core mass.
 # [已校验] Hurley_2000: equation 5.1.2(29)
 @njit
-def mctmsf(m):
-    mctms = (1.586 + m ** 5.25) / (2.434 + 1.02 * m ** 5.25)
-    return mctms
+def mcTMS_div_mcEHG(m):
+    value = (1.586 + m ** 5.25) / (2.434 + 1.02 * m ** 5.25)
+    return value
 
 
 # A function to evaluate core mass at BGB or He ignition (depending on mchefl) for IM & HM stars
@@ -586,8 +586,8 @@ def mctmsf(m):
 @njit
 def mcheif(m, mhefl, mchefl, x):
     mcbagb = mcagbf(m, x)
-    a3 = mchefl ** 4 - x.gbp[33] * mhefl ** x.gbp[34]
-    mchei = min(0.95 * mcbagb, (a3 + x.gbp[33] * m ** x.gbp[34]) ** (1 / 4))
+    C = mchefl ** 4 - x.gbp[33] * mhefl ** x.gbp[34]
+    mchei = min(0.95 * mcbagb, (C + x.gbp[33] * m ** x.gbp[34]) ** (1 / 4))
     return mchei
 
 

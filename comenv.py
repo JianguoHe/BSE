@@ -23,9 +23,9 @@ from const import alpha, ktype, ceflag, aursun
 @njit
 def comenv(m01, m1, mc1, aj1, jspin1, kw1, m02, m2, mc2, aj2, jspin2, kw2, zcnsts, ecc, sep, jorb, coel, z, kick):
     # 设置初始参数
-    tm1 = 0
-    tm2 = 0
-    tn = 0
+    # tm1 = 0
+    # tm2 = 0
+    # tn = 0
     K3 = 0.21
     coel = False
     r1 = 0
@@ -46,21 +46,21 @@ def comenv(m01, m1, mc1, aj1, jspin1, kw1, m02, m2, mc2, aj2, jspin2, kw2, zcnst
     ebindf = 0
 
     vs = np.array([0.0, 0, 0, 0])
-    tscls1 = np.zeros((1, 21)).flatten()
-    tscls2 = tscls1.copy()
-    lums = np.zeros((1, 11)).flatten()
-    GB = lums.copy()
+    # tscls1 = np.zeros((1, 21)).flatten()
+    # tscls2 = tscls1.copy()
+    # lums = np.zeros((1, 11)).flatten()
+    # GB = lums.copy()
 
     # 获得核质量和半径
     kw = kw1
-    (kw1, m01, m1, tm1, tn, tscls1, lums, GB) = star(kw1, m01, m1, tm1, tn, tscls1, lums, GB, zcnsts)
+    (tm1, tn, tscls1, lums, GB) = star(kw1, m01, m1, zcnsts)
     (m01, aj1, m1, tm1, tn, tscls1, lums, GB, r1, lum1, kw1, mc1, rc1, menv, renv, k21) = hrdiag(
         m01, aj1, m1, tm1, tn, tscls1, lums, GB, zcnsts, r1, lum1, kw1, mc1, rc1, menv, renv, k21, kick)
     ospin1 = jspin1 / (k21 * r1 * r1 * (m1 - mc1) + K3 * rc1 * rc1 * mc1)
     # menvd = menv / (m1 - mc1)
     # rzams = rzamsf(m01, zcnsts)
     kw = kw2
-    (kw2, m02, m2, tm2, tn, tscls2, lums, GB) = star(kw2, m02, m2, tm2, tn, tscls2, lums, GB, zcnsts)
+    (tm2, tn, tscls2, lums, GB) = star(kw2, m02, m2, zcnsts)
     (m02, aj2, m2, tm2, tn, tscls2, lums, GB, r2, lum2, kw2, mc2, rc2, menv, renv, k22) = hrdiag(
         m02, aj2, m2, tm2, tn, tscls2, lums, GB, zcnsts, r2, lum2, kw2, mc2, rc2, menv, renv, k22, kick)
     ospin2 = jspin2 / (k22 * r2 * r2 * (m2 - mc2) + K3 * rc2 * rc2 * mc2)
@@ -116,7 +116,7 @@ def comenv(m01, m1, mc1, aj1, jspin1, kw1, m02, m2, mc2, aj2, jspin2, kw2, zcnst
             # 主星变成了一个黑洞/中子星/白矮星/氦星
             MF = m1
             m1 = mc1
-            (kw1, m01, m1, tm1, tn, tscls1, lums, GB) = star(kw1, m01, m1, tm1, tn, tscls1, lums, GB, zcnsts)
+            (tm1, tn, tscls1, lums, GB) = star(kw1, m01, m1, zcnsts)
             (m01, aj1, m1, tm1, tn, tscls1, lums, GB, r1, lum1, kw1, mc1, rc1, menv, renv, k21) = hrdiag(
                 m01, aj1, m1, tm1, tn, tscls1, lums, GB, zcnsts, r1, lum1, kw1, mc1, rc1, menv, renv, k21, kick)
             if kw1 >= 13:
@@ -181,7 +181,7 @@ def comenv(m01, m1, mc1, aj1, jspin1, kw1, m02, m2, mc2, aj2, jspin2, kw2, zcnst
         else:
             mf = m1
             m1 = mc1
-            (kw1, m01, m1, tm1, tn, tscls1, lums, GB) = star(kw1, m01, m1, tm1, tn, tscls1, lums, GB, zcnsts)
+            (tm1, tn, tscls1, lums, GB) = star(kw1, m01, m1, zcnsts)
             (m01, aj1, m1, tm1, tn, tscls1, lums, GB, r1, lum1, kw1, mc1, rc1, menv, renv, k21) = hrdiag(
                 m01, aj1, m1, tm1, tn, tscls1, lums, GB, zcnsts, r1, lum1, kw1, mc1, rc1, menv, renv, k21, kick)
             if kw1 >= 13:
@@ -192,7 +192,7 @@ def comenv(m01, m1, mc1, aj1, jspin1, kw1, m02, m2, mc2, aj2, jspin2, kw2, zcnst
             mf = m2
             kw = kw2
             m2 = mc2
-            (kw2, m02, m2, tm2, tn, tscls2, lums, GB) = star(kw2, m02, m2, tm2, tn, tscls2, lums, GB, zcnsts)
+            (tm2, tn, tscls2, lums, GB) = star(kw2, m02, m2, zcnsts)
             (m02, aj2, m2, tm2, tn, tscls2, lums, GB, r2, lum2, kw2, mc2, rc2, menv, renv, k22) = hrdiag(
                 m02, aj2, m2, tm2, tn, tscls2, lums, GB, zcnsts, r2, lum2, kw2, mc2, rc2, menv, renv, k22, kick)
             if kw2 >= 13 and kw < 13:
@@ -247,14 +247,14 @@ def comenv(m01, m1, mc1, aj1, jspin1, kw1, m02, m2, mc2, aj2, jspin2, kw2, zcnst
 
         # Combine the core masses.
         if kw == 2:
-            (kw, m1, m1, tm2, tn, tscls2, lums, GB) = star(kw, m1, m1, tm2, tn, tscls2, lums, GB, zcnsts)
+            (tm2, tn, tscls2, lums, GB) = star(kw, m1, m1, zcnsts)
             if GB[9] >= mc1:
                 m01 = m1
                 aj1 = tm2 + (tscls2[1] - tm2) * (aj1 - tm1) / (tscls1[1] - tm1)
-                (kw, m01, m1, tm1, tn, tscls1, lums, GB) = star(kw, m01, m1, tm1, tn, tscls1, lums, GB, zcnsts)
+                (tm1, tn, tscls1, lums, GB) = star(kw, m01, m1, zcnsts)
         elif kw == 7:
             m01 = m1
-            (kw, m01, m1, tm1, tn, tscls1, lums, GB) = star(kw, m01, m1, tm1, tn, tscls1, lums, GB, zcnsts)
+            (tm1, tn, tscls1, lums, GB) = star(kw, m01, m1, zcnsts)
             aj1 = tm1 * (fage1 * mc1 + fage2 * mc22) / (mc1 + mc22)
         elif kw == 4 or mc2 > 0.0 or kw != kw1:
             if (kw == 4):
@@ -263,7 +263,7 @@ def comenv(m01, m1, mc1, aj1, jspin1, kw1, m02, m2, mc2, aj2, jspin2, kw2, zcnst
             mc2 = 0.0
             # 为巨星获得一个新的年龄
             (mc1, m1, kw, m01, aj1) = gntage(mc1, m1, kw, zcnsts, m01, aj1)
-            (kw, m01, m1, tm1, tn, tscls1, lums, GB) = star(kw, m01, m1, tm1, tn, tscls1, lums, GB, zcnsts)
+            (tm1, tn, tscls1, lums, GB) = star(kw, m01, m1, zcnsts)
 
         (m01, aj1, m1, tm1, tn, tscls1, lums, GB, r1, lum1, kw, mc1, rc1, menv, renv, k21) = hrdiag(
             m01, aj1, m1, tm1, tn, tscls1, lums, GB, zcnsts, r1, lum1, kw, mc1, rc1, menv, renv, k21, kick)
