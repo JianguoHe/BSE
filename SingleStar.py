@@ -2,6 +2,7 @@ from numba import float64, int64, types
 from numba.experimental import jitclass
 import numpy as np
 from const import acc1, alpha_wind, kick, output, find, SNtype, G, Msun, Rsun, beta_wind, tiny
+from const import mb_gamma, mb_model, yearsc
 from zfuncs import rochelobe
 from stellerwind import steller_wind
 
@@ -45,7 +46,7 @@ class SingleStar:
         self.R = R
         self.L = L
         self.Teff = Teff
-        self.spin = spin
+        self.omega_spin = omega_spin
         self.jspin = jspin
         self.Z = Z
         self.dt = dt
@@ -72,6 +73,11 @@ class SingleStar:
 
     # 考虑磁制动的影响
     def magnetic_braking(self):
+        if mb_model == 'Rappaport1983':
+            djspin = 3.8e-30 * self.mass * self.R ** mb_gamma *  ** 3 * Rsun ** 2 / yearsc
+        elif mb_model == 'Hurley2002':
+            djspin = -5.83e-16 * self.mass_envelop * (self.R * self.spin) ** 3 / self.mass
+
         # 计算有明显对流包层的恒星因磁制动损失的自旋角动量, 包括主序星(M < 1.25)、靠近巨星分支的HG恒星以及巨星, 不包括完全对流主序星
         if self.mass > 0.35 and self.type < 10:
             djspin = -5.83e-16 * self.mass_envelop * (self.R * self.spin) ** 3 / self.mass

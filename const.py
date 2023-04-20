@@ -18,7 +18,7 @@ sep_max = 1e4                     # 最大轨道间距
 alpha = 1.0                       # 公共包层效率参数(1)
 SNtype = 1                        # 超新星类型(1,2,3分别对应于rapid,delayed,stochastic)
 tiny = 1e-14                      # 小量
-hewind = 1.0                      # 氦星质损因子（通常为 1 ）
+
 ceflag = 3                        # ceflag > 0 activates spin-energy correction in common-envelope (0).
                                   # ceflag = 3 activates de Kool common-envelope model
 tflag = 1                         # tflag > 0 activates tidal circularisation (1)
@@ -34,31 +34,34 @@ sigma = 265.0                     # 超新星速度踢的麦克斯韦分布（ 1
 mb_model = 'Rappaport1983'        # 磁制动模型【'Hurley2002', 'Rappaport1983'】
 mb_gamma = 3                      # 磁制动指数
 
+
 # 数值常量
-mch = 1.44           # 钱德拉塞卡极限（太阳质量）
-pc = 3.08567758e18   # 秒差距 → 厘米
-yeardy = 365.25
-yearsc = 3.1557e7
-Msun = 1.9884e33     # 太阳质量（克）
-Rsun = 6.957e10      # 太阳半径(单位: 厘米)
-G = 6.6743e-8        # 引力常量(厘米克秒制)
-c = 2.99792458e10    # 光速(厘米克秒制)
-aursun = 215.0291    # 计算双星轨道间距中的一个常数(公式中所有单位转化为太阳单位)
+mch = 1.44                        # 钱德拉塞卡极限（太阳质量）
+pc = 3.08567758e18                # 秒差距 → 厘米
+yeardy = 365.25                   # 天 → 秒
+yearsc = 3.1557e7                 # 年 → 秒
+Msun = 1.9884e33                  # 太阳质量（单位: g）
+Rsun = 6.957e10                   # 太阳半径(单位: cm)
+Lsun = 3.83e33                    # 太阳光度(单位: erg/s)
+Zsun = 0.02                       # 太阳金属丰度
+G = 6.6743e-8                     # 引力常量(单位: cm3 * g-1 * s-2)
+c = 2.99792458e10                 # 光速(单位: cm/s)
+aursun = 215.0291                 # 计算双星轨道间距中的一个常数(公式中所有单位转化为太阳单位)
 tol = 1e-7
 epsnov = 0.001
-eddfac = 1.0         # 物质转移的爱丁顿极限因子(1.0)
+eddfac = 1.0                      # 物质转移的爱丁顿极限因子(1.0)
 gamma = -2.0
 ktype = instar()
 
 
 # 星风质量损失相关常数
-alpha_wind = 1.5         # Bondi-Hoyle 星风吸积因子 (3/2)
-beta_wind = 0.125        # 星风速度因子：正比于 vwind**2 (1/8)
-bwind = 0.0              # 星风增强质损参数（由于双星的潮汐作用）
-neta = 0.5               # Reimers 质量损失系数，（通常为 0.5 ）
+eta = 0.5                         # Reimers 质量损失系数(通常为0.5)
+bwind = 0.0                       # Reimers 质量损失潮汐增强参数(通常为0)
+hewind = 1.0                      # 氦星质损因子（通常为1）
 acc1 = 3.920659e8        # 风吸积常数
 xi = 1.0                 # 星风吸积中自旋比角动量的转移效率(1)
-
+alpha_wind = 1.5         # Bondi-Hoyle 星风吸积因子 (3/2)
+beta_wind = 0.125        # 星风速度因子：正比于 vwind**2 (1/8)
 
 # 星族合成数据数组（以类的形式保存）
 spec = [('BH_BH', float64[:, :]), ('BH_NS', float64[:, :]), ('BH_WD', float64[:, :]),

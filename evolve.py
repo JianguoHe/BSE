@@ -11,7 +11,7 @@ from timestep import timestep
 from gntage import gntage
 from comenv import comenv
 from corerd import corerd
-from const import neta, beta_wind, alpha_wind, acc1
+from const import eta, beta_wind, alpha_wind, acc1
 from const import ktype, xi, tflag, eddfac, mch, epsnov, gamma, yeardy, aursun, tiny
 
 
@@ -246,7 +246,7 @@ def evolve(kstar, mass0, mass, rad, lumin, massc, radc, menv, renv,
                     vorb2 = acc1 * (mass[1] + mass[2]) / sep
                     ivsqm = 1.0 / np.sqrt(1.0 - ecc * ecc)
                     for k in range(1, 3):
-                        if neta > tiny:
+                        if eta > tiny:
                             # 计算星风质量损失，用 dmr 表示
                             rlperi = rol[k] * (1.0 - ecc)
                             dmr[k] = mlwind(kstar[k], lumin[k], rad[k], mass[k], massc[k], rlperi, z)
@@ -260,7 +260,7 @@ def evolve(kstar, mass0, mass, rad, lumin, massc, radc, menv, renv,
                             dmr[k] = 0.0
                             dmt[3 - k] = 0.0
                     # 诊断共生星（Symbiotic-type stars）
-                    if neta > tiny and not esymb:
+                    if eta > tiny and not esymb:
                         lacc = 3.14e7 * mass[j2] * dmt[j2] / rad[j2]
                         lacc = lacc / lumin[j1]
                         if (lacc > 0.01 and not bsymb) or (lacc < 0.01 and bsymb):
@@ -367,7 +367,7 @@ def evolve(kstar, mass0, mass, rad, lumin, massc, radc, menv, renv,
                     dtm = dt / 1.0e6
                 elif abs(dtm) > tiny and sgl:
                     for k in range(kmin, kmax + 1):
-                        if neta > tiny:
+                        if eta > tiny:
                             rlperi = 0.0
                             dmr[k] = mlwind(kstar[k], lumin[k], rad[k], mass[k], massc[k], rlperi, z)
                         else:
@@ -1181,7 +1181,7 @@ def evolve(kstar, mass0, mass, rad, lumin, massc, radc, menv, renv,
                         vorb2 = acc1 * (mass[1] + mass[2]) / sep
                         ivsqm = 1.0 / np.sqrt(1.0 - ecc * ecc)
                         for k in range(1, 3):
-                            if neta > tiny:
+                            if eta > tiny:
                                 rlperi = rol[k] * (1.0 - ecc)
                                 dmr[k] = mlwind(kstar[k], lumin[k], radx[k], mass[k], massc[k], rlperi, z)
                                 vwind2 = 2.0 * beta_wind * acc1 * mass[k] / radx[k]
