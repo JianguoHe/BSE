@@ -1,7 +1,7 @@
 import random
 import numpy as np
 from numba import njit
-from const import yearsc, Msun, G, c, pc, num_evolve
+from const import yearsc, Msun, G, clight, pc, num_evolve
 from const import m1_min, m1_max, m2_min, m2_max, sep_min, sep_max
 import legwork as lw
 import astropy.units as u
@@ -244,9 +244,6 @@ def hn(f, t_obs):
 #     return grid, tphysf, time_start, time_end, time_interval
 
 
-
-
-
 # 估算洛希瓣半径
 @njit
 def rochelobe(q):
@@ -255,22 +252,22 @@ def rochelobe(q):
     return rl
 
 
-# 估算零龄主序光度 Lzams （from Tout et al., 1996, MNRAS, 281, 257）
+# 估算零龄主序光度 Lzams (from Tout et al., 1996, MNRAS, 281, 257, eq.1)
 @njit
 def lzamsf(m, x):
-    mx = np.sqrt(m)
-    lzams = (x.msp[1] * m ** 5 * mx + x.msp[2] * m ** 11) / (
-                x.msp[3] + m ** 3 + x.msp[4] * m ** 5 + x.msp[5] * m ** 7 + x.msp[6] * m ** 8 + x.msp[7] * m ** 9 * mx)
+    term1 = x.msp[1] * m ** 5.5 + x.msp[2] * m ** 11
+    term2 = x.msp[3] + m ** 3 + x.msp[4] * m ** 5 + x.msp[5] * m ** 7 + x.msp[6] * m ** 8 + x.msp[7] * m ** 9.5
+    lzams = term1 / term2
     return lzams
 
 
-# 估算零龄主序半径 Rzams
+# 估算零龄主序半径 Rzams (from Tout et al., 1996, MNRAS, 281, 257, eq.2)
 @njit
 def rzamsf(m, x):
-    mx = np.sqrt(m)
-    rzams = ((x.msp[8] * m ** 2 + x.msp[9] * m ** 6) * mx + x.msp[10] * m ** 11 + (
-            x.msp[11] + x.msp[12] * mx) * m ** 19) / (x.msp[13] + x.msp[14] * m ** 2 + (
-            x.msp[15] * m ** 8 + m ** 18 + x.msp[16] * m ** 19) * mx)
+    term1 = x.msp[8] * m ** 2.5 + x.msp[9] * m ** 6.5 + x.msp[10] * m ** 11
+    term2 = x.msp[11] * m ** 19 + x.msp[12] * m ** 19.5
+    term3 = x.msp[13] + x.msp[14] * m ** 2 + x.msp[15] * m ** 8.5 + m ** 18.5 + x.msp[16] * m ** 19.5
+    rzams = (term1 + term2) / term3
     return rzams
 
 
@@ -278,8 +275,9 @@ def rzamsf(m, x):
 # [已校验] Hurley_2000: equation 5.1(4)
 @njit
 def tbgbf(m, x):
-    tbgb = (x.msp[17] + x.msp[18] * m ** 4 + x.msp[19] * m ** (11 / 2) + m ** 7) / (
-            x.msp[20] * m ** 2 + x.msp[21] * m ** 7)
+    term1 = x.msp[17] + x.msp[18] * m ** 4 + x.msp[19] * m ** 5.5 + m ** 7
+    term2 = x.msp[20] * m ** 2 + x.msp[21] * m ** 7
+    tbgb = term1 / term2
     return tbgb
 
 
@@ -309,12 +307,13 @@ def tbgdzf(m, x):
     return tbgdz
 
 
-# A function to evaluate the lifetime to the end of the MS hook as a fraction of the lifetime to the BGB
-# (for those models that have one). Note that this function is only valid for M > Mhook.
+# A function to evaluate the thook/tBGB (for those models that have one).
+# Note that this function is only valid for M > Mhook.
 # [已校验] Hurley_2000: equation 5.1(7)
 @njit
 def thook_div_tBGB(m, x):
-    value = max(0.5, 1 - 0.01 * max(x.msp[22] / m ** x.msp[23], x.msp[24] + x.msp[25] / m ** x.msp[26]))
+    term = 1 - 0.01 * max(x.msp[22] / m ** x.msp[23], x.msp[24] + x.msp[25] / m ** x.msp[26])
+    value = max(0.5, term)
     return value
 
 
@@ -322,9 +321,27 @@ def thook_div_tBGB(m, x):
 # [已校验] Hurley_2000: equation 5.1(8)
 @njit
 def ltmsf(m, x):
-    ltms = (x.msp[27] * m ** 3 + x.msp[28] * m ** 4 + x.msp[29] * m ** (x.msp[32] + 1.8)) / (
-            x.msp[30] + x.msp[31] * m ** 5 + m ** x.msp[32])
+    term1 = x.msp[27] * m ** 3 + x.msp[28] * m ** 4 + x.msp[29] * m ** (x.msp[32] + 1.8)
+    term2 = x.msp[30] + x.msp[31] * m ** 5 + m ** x.msp[32]
+    ltms = term1 / term2
     return ltms
+
+
+# 估算主序末尾的半径
+# Note that a safety check is added to ensure Rtms > Rzams when extrapolating the function to low masses. (JH 24/11/97)
+# [已校验] Hurley_2000: equation 5.1(9)
+@njit
+def rtmsf(m, x):
+    if m <= x.msp[62]:
+        rtms = (x.msp[52] + x.msp[53] * m ** x.msp[55]) / (x.msp[54] + m ** x.msp[56])
+        # extrapolated to low mass(M < 0.5)
+        rtms = max(rtms, 1.5 * rzamsf(m, x))
+    elif m >= x.msp[62] + 0.1:
+        term = x.msp[57] * m ** 3 + x.msp[58] * m ** x.msp[61] + x.msp[59] * m ** (x.msp[61] + 1.5)
+        rtms = term / (x.msp[60] + m ** 5)
+    else:
+        rtms = x.msp[63] + ((m - x.msp[62]) / 0.1) * (x.msp[64] - x.msp[63])
+    return rtms
 
 
 # 估算光度 alpha 系数
@@ -335,13 +352,13 @@ def lalphaf(m, x):
     if m < 0.5:
         lalpha = x.msp[39]
     elif m < 0.7:
-        lalpha = x.msp[39] + ((0.3 - x.msp[39]) / 0.2) * (m - 0.5)
+        lalpha = x.msp[39] + 5 * (0.3 - x.msp[39]) * (m - 0.5)
     elif m < x.msp[37]:
-        lalpha = 0.3 + ((x.msp[40] - 0.3) / (x.msp[37] - 0.7)) * (m - 0.7)
+        lalpha = 0.3 + (x.msp[40] - 0.3) * (m - 0.7) / (x.msp[37] - 0.7)
     elif m < x.msp[38]:
-        lalpha = x.msp[40] + ((x.msp[41] - x.msp[40]) / (x.msp[38] - x.msp[37])) * (m - x.msp[37])
+        lalpha = x.msp[40] + (x.msp[41] - x.msp[40]) * (m - x.msp[37]) / (x.msp[38] - x.msp[37])
     elif m < mcut:
-        lalpha = x.msp[41] + ((x.msp[42] - x.msp[41]) / (mcut - x.msp[38])) * (m - x.msp[38])
+        lalpha = x.msp[41] + (x.msp[42] - x.msp[41]) * (m - x.msp[38]) / (mcut - x.msp[38])
     else:
         lalpha = (x.msp[33] + x.msp[34] * m ** x.msp[36]) / (m ** 0.4 + x.msp[35] * m ** 1.9)
     return lalpha
@@ -358,24 +375,24 @@ def lbetaf(m, x):
     return lbeta
 
 
-# 估算光度 neta 系数
+# 估算光度 eta 系数
 # [已校验] Hurley_2000: equation 5.1.1(18)
 @njit
-def lnetaf(m, x):
+def letaf(m, x):
     if m <= 1:
-        lneta = 10
+        leta = 10
     elif m >= 1.1:
-        lneta = 20
+        leta = 20
     else:
-        lneta = 10 + 100 * (m - 1)
-    lneta = min(lneta, x.msp[97])
-    return lneta
+        leta = 10 + 100 * (m - 1)
+    leta = min(leta, x.msp[97])
+    return leta
 
 
 # A function to evalute the luminosity pertubation on the MS phase for M > Mhook. (JH 24/11/97)【我对这个函数的定义有改动】
 # [已校验] Hurley_2000: equation 5.1.1(16)
 @njit
-def lpertf(m, mhook, x):
+def lhookf(m, mhook, x):
     if m <= mhook:
         lhook = 0
     elif m >= x.msp[51]:
@@ -386,23 +403,6 @@ def lpertf(m, mhook, x):
     return lhook
 
 
-# A function to evaluate the radius at the end of the MS
-# Note that a safety check is added to ensure Rtms > Rzams when extrapolating the function to low masses. (JH 24/11/97)
-# [已校验] Hurley_2000: equation 5.1(9)
-@njit
-def rtmsf(m, x):
-    if m <= x.msp[62]:
-        rtms = (x.msp[52] + x.msp[53] * m ** x.msp[55]) / (x.msp[54] + m ** x.msp[56])
-        # extrapolated to low mass(M < 0.5)
-        rtms = max(rtms, 1.5 * rzamsf(m, x))
-    elif m >= x.msp[62] + 0.1:
-        rtms = (x.msp[57] * m ** 3 + x.msp[58] * m ** x.msp[61] + x.msp[59] * m ** (x.msp[61] + 1.5)) / (
-                    x.msp[60] + m ** 5)
-    else:
-        rtms = x.msp[63] + ((m - x.msp[62]) / 0.1) * (x.msp[64] - x.msp[63])
-    return rtms
-
-
 # 估算半径 alpha 系数
 # [已校验] Hurley_2000: equation 5.1.1(21)
 @njit
@@ -410,13 +410,13 @@ def ralphaf(m,x):
     if m <= 0.5:
         ralpha = x.msp[73]
     elif m <= 0.65:
-        ralpha = x.msp[73] + ((x.msp[74] - x.msp[73]) / 0.15) * (m - 0.5)
+        ralpha = x.msp[73] + (x.msp[74] - x.msp[73]) * (m - 0.5) / 0.15
     elif m <= x.msp[70]:
-        ralpha = x.msp[74] + ((x.msp[75]-x.msp[74])/(x.msp[70]-0.65))*(m - 0.65)
+        ralpha = x.msp[74] + (x.msp[75] - x.msp[74]) * (m - 0.65) / (x.msp[70] - 0.65)
     elif m <= x.msp[71]:
-        ralpha = x.msp[75] + ((x.msp[76] - x.msp[75])/(x.msp[71] - x.msp[70]))*(m - x.msp[70])
+        ralpha = x.msp[75] + (x.msp[76] - x.msp[75]) * (m - x.msp[70]) / (x.msp[71] - x.msp[70])
     elif m <= x.msp[72]:
-        ralpha = (x.msp[65]*m**x.msp[67])/(x.msp[66] + m**x.msp[68])
+        ralpha = (x.msp[65] * m ** x.msp[67]) / (x.msp[66] + m ** x.msp[68])
     else:
         a5 = (x.msp[65] * x.msp[72] ** x.msp[67]) / (x.msp[66] + x.msp[72] ** x.msp[68])
         ralpha = a5 + x.msp[69] * (m - x.msp[72])
@@ -468,7 +468,7 @@ def rgammaf(m, x):
 # A function to evalute the radius pertubation on the MS phase for M > Mhook. (JH 24/11/97)【我对这个函数的定义有改动】
 # [已校验] Hurley_2000: equation 5.1.1(17)
 @njit
-def rpertf(m, mhook, x):
+def rhookf(m, mhook, x):
     if m <= mhook:
         rhook = 0
     elif m <= x.msp[94]:
@@ -797,7 +797,7 @@ def rhegbf(lum):
 
 # 估算光度扰动的指数(适用于非主序星)
 @njit
-def lpert1f(m, mu):
+def lpertf(m, mu):
     b = 0.002 * max(1, 2.5 / m)
     lpert = (1 + b ** 3) * ((mu / b) ** 3) / (1 + (mu / b) ** 3)
     return lpert
@@ -805,7 +805,7 @@ def lpert1f(m, mu):
 
 # 估算半径扰动的指数(适用于非主序星)
 @njit
-def rpert1f(m, mu, r, rc):
+def rpertf(m, mu, r, rc):
     if mu <= 0:
         rpert = 0
     else:

@@ -203,7 +203,7 @@ def zcnsts_set(x):
     x.msp[95] = 0.063 + lzs * (0.0481 + 0.00984 * lzs)
     x.msp[96] = min(1.3, max(0.45, 1.2 + 2.45 * lzs))
 
-    # Lneta
+    # Leta
     if z > 0.0009:
         x.msp[97] = 10
     else:

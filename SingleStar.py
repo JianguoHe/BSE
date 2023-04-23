@@ -2,51 +2,54 @@ from numba import float64, int64, types
 from numba.experimental import jitclass
 import numpy as np
 from const import acc1, alpha_wind, kick, output, find, SNtype, G, Msun, Rsun, beta_wind, tiny
-from const import mb_gamma, mb_model, yearsc
+from const import mb_gamma, mb_model, yearsc, Zsun, eta, bwind, f_WR, f_LBV, wind_model, Teffsun
 from zfuncs import rochelobe
-from stellerwind import steller_wind
+
+
+# from stellerwind import steller_wind
 
 
 # Single star class
 @jitclass([
-    ('type', int64),            # steller type
-    ('Z', float64),  # initial mass fraction of metals
-    ('mass', float64),  # mass (solar units)
-    ('R', float64),  # log10 of radius (solar units)
-    ('L', float64),  # log10 luminosity (solar units)
-    ('dt', float64),            # 演化步长
-    ('Teff', float64),  # effective temperature (K)
-    ('spin', float64),  # the dimesionless spin of the star, if it is a compact object,
-                        # which is equal to c*J/(GM^2).
-    ('jspin', float64),  # 自旋角动量
-    ('rochelobe', float64),      # in solar units
-    ('mass_core', float64),  # in solar units
-    ('mass_he_core', float64),  # in solar units
-    ('mass_c_core', float64),  # in solar units
-    ('mass_o_core', float64),  # in solar units
-    ('mass_co_core', float64),  # in solar units
-    ('mass_envelop', float64),  # in solar units
-    ('radius_core', float64),  # in solar units
-    ('radius_he_core', float64),  # in solar units
-    ('radius_c_core', float64),  # in solar units
-    ('radius_o_core', float64),  # in solar units
-    ('radius_co_core', float64),  # in solar units
-    ('dml_wind', float64),      # 星风质量损失
-    ('dma_wind', float64),      # 星风质量吸积
-    ('djspin_wind', float64),    # 星风提取的自旋角动量
-    ('djspin_mb', float64),      # 磁制动提取的自旋角动量
+    ('type', float64),                      # steller type
+    ('Z', float64),                         # initial mass fraction of metals
+    ('mass', float64),                      # mass (solar units)
+    ('R', float64),                         # radius (solar units)
+    ('L', float64),                         # luminosity (solar units)
+    ('dt', float64),                        # evolution timestep
+    ('Teff', float64),                      # effective temperature (K)
+    # ('spin', float64),                    # the dimesionless spin of the star, if it is a compact object,
+    #                                       # which is equal to c*J/(GM^2).
+    ('spin', float64),                      # 自旋角频率(unit: /yr)
+    ('jspin', float64),                     # 自旋角动量(unit: Msun * Rsun2 / yr)
+    ('rochelobe', float64),                 # 洛希瓣半径(unit: Rsun)
+    ('mass_core', float64),                 # in solar units
+    ('mass_he_core', float64),              # in solar units
+    ('mass_c_core', float64),               # in solar units
+    ('mass_o_core', float64),               # in solar units
+    ('mass_co_core', float64),              # in solar units
+    ('mass_envelop', float64),              # in solar units
+    ('radius_core', float64),               # in solar units
+    ('radius_he_core', float64),            # in solar units
+    ('radius_c_core', float64),             # in solar units
+    ('radius_o_core', float64),             # in solar units
+    ('radius_co_core', float64),            # in solar units
+    ('mdot_wind_loss', float64),            # 星风质量损失率(对于双星可能吸积次星的质量, 不一定为负)
+    ('mdot_wind_accrete', float64),         # 星风质量吸积
+    ('jdot_spin_wind', float64),            # 星风提取的自旋角动量
+    ('jdot_spin_mb', float64),              # 磁制动提取的自旋角动量
 ])
 class SingleStar:
     def __init__(self, type, Z, mass, R=0, L=0, dt=0, Teff=0, spin=0, jspin=0, rochelobe=0,
                  mass_core=0, mass_he_core=0, mass_c_core=0, mass_o_core=0, mass_co_core=0, mass_envelop=0,
                  radius_core=0, radius_he_core=0, radius_c_core=0, radius_o_core=0, radius_co_core=0,
-                 dml_wind=0, dma_wind=0, djspin_wind=0, djspin_mb=0):
+                 mdot_wind_loss=0, mdot_wind_accrete=0, jdot_spin_wind=0, jdot_spin_mb=0):
         self.type = type
         self.mass = mass
         self.R = R
         self.L = L
         self.Teff = Teff
-        self.omega_spin = omega_spin
+        self.spin = spin
         self.jspin = jspin
         self.Z = Z
         self.dt = dt
@@ -62,34 +65,168 @@ class SingleStar:
         self.radius_c_core = radius_c_core
         self.radius_o_core = radius_o_core
         self.radius_co_core = radius_co_core
-        # 星风中的变量
-        self.dml_wind = dml_wind
-        self.dma_wind = dma_wind
-        self.djspin_wind = djspin_wind
-        self.djspin_mb = djspin_mb
+        self.mdot_wind_loss = mdot_wind_loss
+        self.mdot_wind_accrete = mdot_wind_accrete
+        self.jdot_spin_wind = jdot_spin_wind
+        self.jdot_spin_mb = jdot_spin_mb
 
-    # def massloss_wind(self):
-    #     self.massloss_wind = mlwind()
+    # 计算表面温度
+    def cal_Teff(self):
+        self.Teff = Teffsun * (self.L / self.R ** 2.0) ** (1.0 / 4.0)
 
     # 考虑磁制动的影响
     def magnetic_braking(self):
-        if mb_model == 'Rappaport1983':
-            djspin = 3.8e-30 * self.mass * self.R ** mb_gamma *  ** 3 * Rsun ** 2 / yearsc
-        elif mb_model == 'Hurley2002':
-            djspin = -5.83e-16 * self.mass_envelop * (self.R * self.spin) ** 3 / self.mass
-
         # 计算有明显对流包层的恒星因磁制动损失的自旋角动量, 包括主序星(M < 1.25)、靠近巨星分支的HG恒星以及巨星, 不包括完全对流主序星
         if self.mass > 0.35 and self.type < 10:
-            djspin = -5.83e-16 * self.mass_envelop * (self.R * self.spin) ** 3 / self.mass
-        else:
-            djspin = 0
+            if mb_model == 'Rappaport1983':
+                self.jdot_spin_mb = -3.8e-30 * self.mass * self.R ** mb_gamma * self.spin ** 3 * Rsun ** 2 / yearsc
+            elif mb_model == 'Hurley2002':
+                self.jdot_spin_mb = -5.83e-16 * self.mass_envelop * (self.R * self.spin) ** 3 / self.mass
+            else:
+                raise ValueError("Please set the proper magnetic braking model.")
+
         # 限制最大3%的磁制动损失的角动量。这可以保证迭代次数不会超过最大值20000, 当然2%也不会影响演化结果
-        if djspin > tiny:
-            dtt = 0.03 * self.jspin / abs(djspin)
-            self.dt = min(self.dt, dtt)
-        self.jspin += djspin * self.dt
+        if self.jdot_spin_mb > 0:
+            dt_max = 0.03 * self.jspin / abs(self.jdot_spin_mb)
+            self.dt = min(self.dt, dt_max)
 
+    # ------------------------------------------------------------------------------------------------------------------
+    #                                               总的星风质量损失(Msun/yr)
+    # ------------------------------------------------------------------------------------------------------------------
+    # 计算总的星风质量损失(Hurley模型)
+    def cal_mdot_wind_Hurley(self, ecc):
+        mdot_NJ = self.cal_mdot_NJ()
+        mdot_KR = self.cal_mdot_KR(ecc=ecc)
+        mdot_VW = self.cal_mdot_VW()
+        mdot_WR = self.cal_mdot_WR()
+        mdot_LBV_Hurley = self.cal_mdot_LBV_Hurley()
 
+        if 0 <= self.type <= 6:
+            mdot_wind = max(mdot_NJ, mdot_KR, mdot_VW, mdot_WR) + mdot_LBV_Hurley
+        elif 7 <= self.type <= 9:
+            mdot_wind = max(mdot_NJ, mdot_KR, mdot_WR)
+        else:
+            mdot_wind = 0
+        return mdot_wind
+
+    # 计算总的星风质量损失(Belczynski模型)
+    def cal_mdot_wind_Belczynski(self, ecc):
+        mdot_OB = self.cal_mdot_OB()
+        mdot_KR = self.cal_mdot_KR(ecc=ecc)
+        mdot_WR_Z_dependent = self.cal_mdot_WR_Z_dependent()
+        mdot_LBV_Belczynski = self.cal_mdot_LBV_Belczynski()
+
+        # LBV星
+        if mdot_LBV_Belczynski > 0:
+            return mdot_LBV_Belczynski
+        # 氦星
+        if 7 <= self.type <= 9:
+            return max(mdot_KR, mdot_WR_Z_dependent)
+        # OB星
+        if mdot_OB > 0:
+            return mdot_OB
+        # 其他情况
+        else:
+            return self.cal_mdot_wind_Hurley(ecc=ecc)
+
+    # -------------------------------------------------------------------------------------------------------------------
+    #                                              各种星风质量损失(Msun/yr)
+    # -------------------------------------------------------------------------------------------------------------------
+    # calculate mass loss rate for massive stars (L > 4000Lsun) over the entire HRD
+    # Nieuwenhuijzen & de Jager 1990, A&A, 231, 134
+    def cal_mdot_NJ(self):
+        if self.L > 4000.0:
+            term1 = 9.631e-15 * min(1.0, (self.L - 4000.0) / 500.0)
+            term2 = self.R ** 0.81 * self.L ** 1.24 * self.mass ** 0.16 * (self.Z / Zsun) ** 0.5
+            mdot_NJ = term1 * term2
+        else:
+            mdot_NJ = 0
+        return mdot_NJ
+
+    # Calculate mass loss rate for massive OB stars using the Vink et al. 2001 prescription
+    # Vink et al. 2001, eqs 24 & 25; Belczynski et al. 2010, eqs 6 & 7
+    def cal_mdot_OB(self):
+        if 1.25e4 < self.Teff <= 2.5e4:
+            term1 = - 6.688 + 2.21 * np.log10(self.L / 1.0e5)
+            term2 = - 1.339 * np.log10(self.mass / 30.0) - 1.601 * np.log10(1.3 / 2.0)
+            term3 = 1.07 * np.log10(self.Teff / 2.0e4) + 0.85 * np.log10(self.Z / Zsun)
+            mdot_OB = 10 ** (term1 + term2 + term3)
+        elif 2.5e4 < self.Teff <= 5.0e4:
+            term1 = - 6.697 + 2.194 * np.log10(self.L / 1.0e5) - 1.313 * np.log10(self.mass / 30.0)
+            term2 = - 1.226 * np.log10(2.6 / 2.0) + 0.933 * np.log10(self.Teff / 4.0e4)
+            term3 = - 10.92 * np.log10(self.Teff / 4.0e4) ** 2 + 0.85 * np.log10(self.Z / Zsun)
+            mdot_OB = 10 ** (term1 + term2 + term3)
+        else:
+            mdot_OB = 0
+        return mdot_OB
+
+    # calculate mass loss rate on the GB and beyond
+    # Hurley et al. 2000, eq 106 (based on a prescription taken from Kudritzki & Reimers, 1978, A&A, 70, 227)
+    def cal_mdot_KR(self, ecc):
+        if 2 <= self.type <= 9:
+            mdot_KR = eta * 4.0e-13 * self.R * self.L / self.mass
+            # 考虑 mdot_KR 受潮汐增强(如果应用, 这里可能还需要考虑偏心轨道的情况)
+            if self.rochelobe > 0.0:
+                rochelobe_periastron = self.rochelobe * (1.0 - ecc)
+                mdot_KR = mdot_KR * (1.0 + bwind * (min(0.5, (self.R / rochelobe_periastron))) ** 6)
+        else:
+            mdot_KR = 0
+        return mdot_KR
+
+    # calculate mass loss rate on the AGB based on the Mira pulsation period
+    # Hurley et al. 2000, just after eq 106 (from Vassiliadis & Wood, 1993, ApJ, 413, 641)
+    def cal_mdot_VW(self):
+        if 5 <= self.type <= 6:
+            p0 = min(1995, 8.51e-3 * self.R ** 1.94 / self.mass ** 0.9)
+            p1 = 100.0 * max(self.mass - 2.5, 0)
+            mdot_VW = min(10.0 ** (-11.4 + 0.0125 * (p0 - p1)), 1.36e-9 * self.L)
+        else:
+            mdot_VW = 0
+        return mdot_VW
+
+    # calculate mass loss of Wolf–Rayet like star with small H-envelope mass
+    # Hurley et al. 2000, just after eq 106 (taken from Hamann, Koesterke & Wessolowski 1995, Hamann & Koesterke 1998)
+    def cal_mdot_WR(self):
+        lum0 = 7e4
+        kap = -0.5
+        mu = (self.mass - self.mass_core) / self.mass * min(5.0, max(1.2, (self.L / lum0) ** kap))
+        if mu < 1.0:
+            mdot_WR = 1.0e-13 * self.L ** 1.5 * (1.0 - mu)
+        else:
+            mdot_WR = 0
+        return mdot_WR
+
+    # calculate mass loss of Wolf–Rayet like star with small H-envelope mass (Z-dependent)
+    # Belczynski et al. 2010, eq 9 (taken from Hamann, Koesterke & Wessolowski 1995, Hamann & Koesterke 1998)
+    def cal_mdot_WR_Z_dependent(self):
+        lum0 = 7e4
+        kap = -0.5
+        mu = (self.mass - self.mass_core) / self.mass * min(5.0, max(1.2, (self.L / lum0) ** kap))
+        if mu < 1.0:
+            mdot_WR_Z_dependent = f_WR * 1.0e-13 * self.L ** 1.5 * (self.Z / Zsun) ** 0.86 * (1.0 - mu)
+        else:
+            mdot_WR_Z_dependent = 0
+        return mdot_WR_Z_dependent
+
+    # Calculate LBV-like mass loss rate for stars beyond the Humphreys-Davidson limit (Humphreys & Davidson 1994)
+    # Hurley+ 2000 Section 7.1 a few equation after Eq. 106 (Equation not labelled)
+    def cal_mdot_LBV_Hurley(self):
+        HD = 1.0e-5 * self.R * self.L ** 0.5
+        if self.L > 6.0e5 and HD > 1.0:
+            mdot_LBV_Hurley = 0.1 * (HD - 1.0) ** 3 * (self.L / 6.0e5 - 1.0)
+        else:
+            mdot_LBV_Hurley = 0
+        return mdot_LBV_Hurley
+
+    # Calculate LBV-like mass loss rate for stars beyond the Humphreys-Davidson limit (Humphreys & Davidson 1994)
+    # Belczynski et al. 2010, eq 8
+    def cal_mdot_LBV_Belczynski(self):
+        HD = 1.0e-5 * self.R * self.L ** 0.5
+        if self.L > 6.0e5 and HD > 1.0:
+            mdot_LBV_Belczynski = f_LBV * 1.0e-4
+        else:
+            mdot_LBV_Belczynski = 0
+        return mdot_LBV_Belczynski
 
     # def evolve(self, force):
     #     # update velocity and position based on force
@@ -98,7 +235,3 @@ class SingleStar:
     #
     #     # update time
     #     self.time += self.dt
-
-
-
-

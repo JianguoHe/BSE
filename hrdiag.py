@@ -4,10 +4,10 @@ from star import star
 from mrenv import mrenv
 from supernova import supernova
 from const import SNtype, ifflag, nsflag, wdflag, mxns, mch, Rsun, tiny
-from zfuncs import thook_div_tBGB, tblf, lalphaf, lbetaf, lnetaf, lpertf, lgbtf
-from zfuncs import lmcgbf, lzhef, lpert1f, rzamsf, rtmsf, ralphaf, rbetaf, rgammaf
-from zfuncs import rpertf, rgbf, rminf, ragbf, rzahbf, rzhef, rhehgf, rhegbf
-from zfuncs import rpert1f, mcTMS_div_mcEHG, mcgbtf, mcgbf, mcheif, mcagbf
+from zfuncs import thook_div_tBGB, tblf, lalphaf, lbetaf, letaf, lhookf, lgbtf
+from zfuncs import lmcgbf, lzhef, lpertf, rzamsf, rtmsf, ralphaf, rbetaf, rgammaf
+from zfuncs import rhookf, rgbf, rminf, ragbf, rzahbf, rzhef, rhehgf, rhegbf
+from zfuncs import rpertf, mcTMS_div_mcEHG, mcgbtf, mcgbf, mcheif, mcagbf
 
 
 # 用途: 确定恒星目前处于哪一个演化阶段(kw, age), 然后计算当前光度、半径、核质量、恒星类型
@@ -71,10 +71,10 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
                 tau2 = max(0.0, min(1.0, (aj - (1.0 - epsilon) * thook) / (epsilon * thook)))
 
                 # 计算主序阶段光度
-                delta_L = lpertf(mass, zcnsts.zpars[1], zcnsts)
+                delta_L = lhookf(mass, zcnsts.zpars[1], zcnsts)
                 alpha_L = lalphaf(mass, zcnsts)
                 beta_L = lbetaf(mass, zcnsts)
-                eta_L = lnetaf(mass, zcnsts)
+                eta_L = letaf(mass, zcnsts)
                 term1 = alpha_L * tau + (np.log10(lums[2]/lums[1]) - alpha_L) * tau ** 2
                 term2 = beta_L * tau ** eta_L - beta_L * tau ** 2
                 term3 = delta_L * (tau1 ** 2 - tau2 ** 2)
@@ -84,7 +84,7 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
                     lum = lums[1] * 10 ** (term1 - term3)
 
                 # 计算主序阶段半径
-                delta_R = rpertf(mass, zcnsts.zpars[1], zcnsts)
+                delta_R = rhookf(mass, zcnsts.zpars[1], zcnsts)
                 alpha_R = ralphaf(mass, zcnsts)
                 beta_R = rbetaf(mass, zcnsts)
                 gamma_R = rgammaf(mass, zcnsts)
@@ -581,12 +581,12 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
             mcmax = min(mt, 1.45 * mt - 0.31)
             mu = ((mcmax - mc) / mcmax) * 5.0
         if mu < 1.0:
-            lpert = lpert1f(mt, mu)
+            lpert = lpertf(mt, mu)
             lum = lc * (lum / lc) ** lpert
             if r <= rc:
                 rpert = 0.0
             else:
-                rpert = rpert1f(mt, mu, r, rc)
+                rpert = rpertf(mt, mu, r, rc)
             r = rc * (r / rc) ** rpert
         rc = min(rc, r)
 
