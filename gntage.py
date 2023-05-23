@@ -1,6 +1,6 @@
 import numpy as np
 from star import star
-from zfuncs import mcheif,mcagbf,mheif,mbagbf,mcgbf,lmcgbf,lbgbf,lbgbdf
+from zfuncs import mcheif,mcagbf,mheif,mbagbf,lum_to_mc_gb,mc_to_lum_gb,lbgbf,lbgbdf
 from numba import njit
 from const import tiny
 
@@ -99,7 +99,7 @@ def gntage(mc, mt, kw, zcnsts, m0, aj):
         else:
             m0 = zcnsts.zpars[2]
             (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
-            lum = lmcgbf(mc,GB)
+            lum = mc_to_lum_gb(mc,GB)
             j = 0
             while True:
                 dell = lbgbf(m0, zcnsts) - lum
@@ -119,7 +119,7 @@ def gntage(mc, mt, kw, zcnsts, m0, aj):
         kw = 8
         mmin = mc
         (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
-        mcx = mcgbf(lums[2], GB, lums[6])
+        mcx = lum_to_mc_gb(lums[2], GB, lums[6])
         if mcx >= mc:
             m0 = mt
             flag2 = False
@@ -128,7 +128,7 @@ def gntage(mc, mt, kw, zcnsts, m0, aj):
             mmax = mt
             for j in range(1, jmax+1):
                 (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
-                mcy = mcgbf(lums[2], GB, lums[6])
+                mcy = lum_to_mc_gb(lums[2], GB, lums[6])
                 if mcy > mc:
                     break
                 mmax = 2.0 * mmax
@@ -146,7 +146,7 @@ def gntage(mc, mt, kw, zcnsts, m0, aj):
                 dm = 0.5 * dm
                 mmid = m0 + dm
                 (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
-                mcy = mcgbf(lums[2], GB, lums[6])
+                mcy = lum_to_mc_gb(lums[2], GB, lums[6])
                 fmid = mcy - mc
                 if fmid < 0.0:
                     m0 = mmid
@@ -166,7 +166,7 @@ def gntage(mc, mt, kw, zcnsts, m0, aj):
         aj = mc / mcy
         (tm, tn, tscls, lums, GB) = star(kw, m0, mt, zcnsts)
         if m0 <= zcnsts.zpars[2]:
-            mcx = mcgbf(lums[4], GB, lums[6])
+            mcx = lum_to_mc_gb(lums[4], GB, lums[6])
         else:
             mcx = mcheif(m0, zcnsts.zpars[2], zcnsts.zpars[10], zcnsts)
         mc = mcx + (mcy - mcx) * aj

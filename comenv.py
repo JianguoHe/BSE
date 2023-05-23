@@ -26,7 +26,7 @@ def comenv(m01, m1, mc1, aj1, jspin1, kw1, m02, m2, mc2, aj2, jspin2, kw2, zcnst
     # tm1 = 0
     # tm2 = 0
     # tn = 0
-    K3 = 0.21
+    K3 = 0.21     # kMR2 转动惯量中的参数, 用于白矮星、中子星或致密对流核
     coel = False
     r1 = 0
     r2 = 0

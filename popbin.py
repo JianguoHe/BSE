@@ -6,7 +6,7 @@ from evolve import evolve
 from zcnst import zcnsts_set
 from zfuncs import weight, SFR_Galaxy
 from const import yeardy, zcnsts, kick, output, find, SNtype, G, Msun, Rsun, num_evolve, alpha
-from const import m1_min, m1_max, m2_min, m2_max, sep_min, sep_max
+from const import m1_min, m1_max, m2_min, m2_max, sep_min, sep_max, ecc_scheme
 import concurrent.futures
 import pysnooper
 
@@ -49,7 +49,12 @@ def Find(zcnsts, kick, output, find):
     tphys = 0.0
 
     # 初始偏心率
-    ecc = 0.0
+    if ecc_scheme == 'zero':
+        ecc = 0.0
+    elif ecc_scheme == 'uniform':
+        ecc = random.random()
+    else:
+        raise ValueError("Please provide an allowed eccentricity scheme.")
 
     # 初始化参数
     kstar = np.array([0.0, 1, 1])

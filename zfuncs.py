@@ -120,24 +120,24 @@ def get_dL():
 
 
 # 计算信噪比
-def cal_SNR(m1, m2, porb, dL, t_obs):
-    # 下面所有的物理量为厘米克秒制
-    Mchirp = (m1 * m2) ** (3 / 5) * (m1 + m2) ** (-1 / 5)
-    Mchirp = Msun * Mchirp
-    forb = 1 / (porb * 24 * 3600)
-    fgw = 2 * forb
-    Edot = 32 * G ** (7 / 3) * (2 * np.pi * Mchirp * forb) ** (10 / 3) / (5 * c ** 5)
-    fdot = 96 * (G * Mchirp) ** (5 / 3) * (2 * np.pi * forb) ** (11 / 3) / (5 * np.pi * c ** 5)
-    hc2 = 2 * G * Edot / (np.pi ** 2 * dL ** 2 * c ** 3 * fdot)
-    factor = fdot * t_obs * yearsc / fgw
-    # hc2 = hc2 * min(1.0, factor)
-    hc2 = hc2 * factor
-    # 固定位置的振幅调制因子A
-    # A = amplitude_modulation()
-    # A = 0.422
-    hc = hc2 ** 0.5
-    SNR = hc / hn(fgw, t_obs)
-    return fgw, hc, SNR
+# def cal_SNR(m1, m2, porb, dL, t_obs):
+#     # 下面所有的物理量为厘米克秒制
+#     Mchirp = (m1 * m2) ** (3 / 5) * (m1 + m2) ** (-1 / 5)
+#     Mchirp = Msun * Mchirp
+#     forb = 1 / (porb * 24 * 3600)
+#     fgw = 2 * forb
+#     Edot = 32 * G ** (7 / 3) * (2 * np.pi * Mchirp * forb) ** (10 / 3) / (5 * c ** 5)
+#     fdot = 96 * (G * Mchirp) ** (5 / 3) * (2 * np.pi * forb) ** (11 / 3) / (5 * np.pi * c ** 5)
+#     hc2 = 2 * G * Edot / (np.pi ** 2 * dL ** 2 * c ** 3 * fdot)
+#     factor = fdot * t_obs * yearsc / fgw
+#     # hc2 = hc2 * min(1.0, factor)
+#     hc2 = hc2 * factor
+#     # 固定位置的振幅调制因子A
+#     # A = amplitude_modulation()
+#     # A = 0.422
+#     hc = hc2 ** 0.5
+#     SNR = hc / hn(fgw, t_obs)
+#     return fgw, hc, SNR
 
 
 # 计算LISA的特征噪声
@@ -307,7 +307,7 @@ def tbgdzf(m, x):
     return tbgdz
 
 
-# A function to evaluate the thook/tBGB (for those models that have one).
+# A function to evaluate the value of thook/tBGB (for those models that have one).
 # Note that this function is only valid for M > Mhook.
 # [已校验] Hurley_2000: equation 5.1(7)
 @njit
@@ -418,8 +418,8 @@ def ralphaf(m,x):
     elif m <= x.msp[72]:
         ralpha = (x.msp[65] * m ** x.msp[67]) / (x.msp[66] + m ** x.msp[68])
     else:
-        a5 = (x.msp[65] * x.msp[72] ** x.msp[67]) / (x.msp[66] + x.msp[72] ** x.msp[68])
-        ralpha = a5 + x.msp[69] * (m - x.msp[72])
+        C = (x.msp[65] * x.msp[72] ** x.msp[67]) / (x.msp[66] + x.msp[72] ** x.msp[68])
+        ralpha = C + x.msp[69] * (m - x.msp[72])
     return ralpha
 
 
@@ -427,20 +427,20 @@ def ralphaf(m,x):
 # [已校验] Hurley_2000: equation 5.1.1(22)
 @njit
 def rbetaf(m,x):
-    m2 = 2
-    m3 = 16
+    m1 = 2
+    m2 = 16
     if m <= 1:
         rbeta = 1.06
     elif m <= x.msp[82]:
-        rbeta = 1.06 + ((x.msp[81] - 1.06) / (x.msp[82] - 1)) * (m - 1)
+        rbeta = 1.06 + (x.msp[81] - 1.06) * (m - 1) / (x.msp[82] - 1)
+    elif m <= m1:
+        B = (x.msp[77] * m1 ** 3.5) / (x.msp[78] + m1 ** x.msp[79])
+        rbeta = x.msp[81] + (B - x.msp[81]) * (m - x.msp[82]) / (m1 - x.msp[82])
     elif m <= m2:
-        b2 = (x.msp[77] * m2 ** (7 / 2)) / (x.msp[78] + m2 ** x.msp[79])
-        rbeta = x.msp[81] + ((b2 - x.msp[81]) / (m2 - x.msp[82])) * (m - x.msp[82])
-    elif m <= m3:
-        rbeta = (x.msp[77] * m ** (7 / 2)) / (x.msp[78] + m ** x.msp[79])
+        rbeta = (x.msp[77] * m ** 3.5) / (x.msp[78] + m ** x.msp[79])
     else:
-        b3 = (x.msp[77] * m3 ** (7 / 2)) / (x.msp[78] + m3 ** x.msp[79])
-        rbeta = b3 + x.msp[80] * (m - m3)
+        C = (x.msp[77] * m2 ** 3.5) / (x.msp[78] + m2 ** x.msp[79])
+        rbeta = C + x.msp[80] * (m - m2)
     rbeta = rbeta - 1
     return rbeta
 
@@ -475,11 +475,19 @@ def rhookf(m, mhook, x):
         rhook = x.msp[95] * np.sqrt((m - mhook) / (x.msp[94] - mhook))
     elif m <= 2:
         m1 = 2
-        B = (x.msp[90] + x.msp[91] * m1 ** (7 / 2)) / (x.msp[92] * m1 ** 3 + m1 ** x.msp[93]) - 1
+        B = (x.msp[90] + x.msp[91] * m1 ** 3.5) / (x.msp[92] * m1 ** 3 + m1 ** x.msp[93]) - 1
         rhook = x.msp[95] + (B - x.msp[95]) * ((m - x.msp[94]) / (m1 - x.msp[94])) ** x.msp[96]
     else:
-        rhook = (x.msp[90] + x.msp[91] * m ** (7 / 2)) / (x.msp[92] * m ** 3 + m ** x.msp[93]) - 1
+        rhook = (x.msp[90] + x.msp[91] * m ** 3.5) / (x.msp[92] * m ** 3 + m ** x.msp[93]) - 1
     return rhook
+
+
+# A function to evaluate the value of mcTMS/mcEHG,
+# [已校验] Hurley_2000: equation 5.1.2(29)
+@njit
+def mcTMS_div_mcEHG(m):
+    value = (1.586 + m ** 5.25) / (2.434 + 1.02 * m ** 5.25)
+    return value
 
 
 # A function to evaluate the luminosity at the base of Giant Branch (for those models that have one)
@@ -489,6 +497,72 @@ def rhookf(m, mhook, x):
 def lbgbf(m, x):
     lbgb = (x.gbp[1] * m ** x.gbp[5] + x.gbp[2] * m ** x.gbp[8]) / (x.gbp[3] + x.gbp[4]*m**x.gbp[7] + m**x.gbp[6])
     return lbgb
+
+
+# convert Mc to lum for GB, AGB and NHe stars
+# [已校验] Hurley_2000: equation 5.2(37)
+@njit
+def mc_to_lum_gb(mc, GB):
+    if mc <= GB[7]:
+        lum = GB[4] * (mc ** GB[5])
+    else:
+        lum = GB[3] * (mc ** GB[6])
+    return lum
+
+
+# convert lum to Mc for GB, AGB and NHe stars
+# [已校验] Hurley_2000: equation 5.2(37)等效
+@njit
+def lum_to_mc_gb(lum, GB, lx):
+    if lum <= lx:
+        mc = (lum / GB[4]) ** (1 / GB[5])
+    else:
+        mc = (lum / GB[3]) ** (1 / GB[6])
+    return mc
+
+
+# A function to evaluate L given t for GB, AGB and NHe stars
+# [已校验] Hurley_2000: equation 5.2(37、39)
+@njit
+def lgbtf(t, A , GB, tinf1, tinf2, tx):
+    # if t <= tx:
+    #     lgbt = GB[4] * (((GB[5] - 1) * A * GB[4] * (tinf1 - t)) ** (GB[5] / (1 - GB[5])))
+    # else:
+    #     lgbt = GB[3] * (((GB[6] - 1) * A * GB[3] * (tinf2 - t)) ** (GB[6] / (1 - GB[6])))
+    # for IM/HM stars, still calculate lum through eq.(37、39)
+    mc = mcgbtf(t, A, GB, tinf1, tinf2, tx)
+    lgbt = mc_to_lum_gb(mc, GB)
+    return lgbt
+
+
+# A function to evaluate Mc given t for GB, AGB and NHe stars (just for LM stars)
+# [已校验] Hurley_2000: equation 5.2(39)
+@njit
+def mcgbtf(t, A, GB, tinf1, tinf2, tx):
+    if t <= tx:
+        mcgbt = ((GB[5] - 1) * A * GB[4] * (tinf1 - t)) ** (1 / (1 - GB[5]))
+    else:
+        mcgbt = ((GB[6] - 1) * A * GB[3] * (tinf2 - t)) ** (1 / (1 - GB[6]))
+    return mcgbt
+
+
+# A function to evaluate core mass at BGB or He ignition (depending on mchefl) for IM & HM stars
+# [已校验] Hurley_2000: equation 5.2(44)
+@njit
+def mcheif(m, mhefl, mchefl, x):
+    mcbagb = mcagbf(m, x)
+    C = mchefl ** 4 - x.gbp[33] * mhefl ** x.gbp[34]
+    mchei = min(0.95 * mcbagb, (C + x.gbp[33] * m ** x.gbp[34]) ** (1 / 4))
+    return mchei
+
+
+# 估算巨星分支上的半径（作为当前质量和光度的函数）
+# [已校验] Hurley_2000: equation 5.2(46)
+@njit
+def rgbf(m, lum, x):
+    A = min(x.gbp[20] / m ** x.gbp[21], x.gbp[22] / m ** x.gbp[23])
+    rgb = A * (lum ** x.gbp[18] + x.gbp[17] * lum ** x.gbp[19])
+    return rgb
 
 
 # A function to evaluate the derivitive of the Lbgb function.
@@ -516,13 +590,6 @@ def lbagbf(m, mhefl, x):
     return lbagb
 
 
-# 估算巨星分支上的半径（作为质量和光度的函数）
-# [已校验] Hurley_2000: equation 5.2(46)
-@njit
-def rgbf(m, lum, x):
-    a = min(x.gbp[20] / m ** x.gbp[21], x.gbp[22] / m ** x.gbp[23])
-    rgb = a * (lum ** x.gbp[18] + x.gbp[17] * lum ** x.gbp[19])
-    return rgb
 
 
 # A function to evaluate radius derivitive on the GB (as f(L)).
@@ -572,25 +639,6 @@ def ragbdf(m, lum, mhelf, x):
     return ragbd
 
 
-# A function to evaluate core mass at the end of the MS as a fraction of the BGB value,
-# i.e. this must be multiplied by the BGB value (see below) to give the actual core mass.
-# [已校验] Hurley_2000: equation 5.1.2(29)
-@njit
-def mcTMS_div_mcEHG(m):
-    value = (1.586 + m ** 5.25) / (2.434 + 1.02 * m ** 5.25)
-    return value
-
-
-# A function to evaluate core mass at BGB or He ignition (depending on mchefl) for IM & HM stars
-# [已校验] Hurley_2000: equation 5.2(44)
-@njit
-def mcheif(m, mhefl, mchefl, x):
-    mcbagb = mcagbf(m, x)
-    C = mchefl ** 4 - x.gbp[33] * mhefl ** x.gbp[34]
-    mchei = min(0.95 * mcbagb, (C + x.gbp[33] * m ** x.gbp[34]) ** (1 / 4))
-    return mchei
-
-
 # A function to evaluate mass at BGB or He ignition (depending on mchefl) for IM & HM stars by inverting mcheif
 @njit
 def mheif(mc, mhefl, mchefl, x):
@@ -620,57 +668,14 @@ def mbagbf(mc, x):
     return mbagb
 
 
-# A function to evaluate Mc given t for GB, AGB and NHe stars
-# [已校验] Hurley_2000: equation 5.2(34、39)
-@njit
-def mcgbtf(t, A, GB, tinf1, tinf2, tx):
-    if t <= tx:
-        mcgbt = ((GB[5] - 1) * A * GB[4] * (tinf1 - t)) ** (1/(1-GB[5]))
-    else:
-        mcgbt = ((GB[6] - 1) * A * GB[3] * (tinf2 - t)) ** (1/(1-GB[6]))
-    return mcgbt
-
-
-# A function to evaluate L given t for GB, AGB and NHe stars
-# [已校验] Hurley_2000: equation 5.2(35)
-@njit
-def lgbtf(t, A , GB, tinf1, tinf2, tx):
-    if t <= tx:
-        lgbt = GB[4] * (((GB[5] - 1) * A * GB[4] * (tinf1 - t)) **(GB[5]/(1-GB[5])))
-    else:
-        lgbt = GB[3] * (((GB[6] - 1) * A * GB[3] * (tinf2 - t)) **(GB[6]/(1-GB[6])))
-    return lgbt
-
-
-# 通过光度估算 GB, AGB and NHe stars 的 Mc
-# [已校验] Hurley_2000: equation 5.2(37)等效
-@njit
-def mcgbf(lum, GB, lx):
-    if lum <= lx:
-        mcgb = (lum / GB[4]) ** (1 / GB[5])
-    else:
-        mcgb = (lum / GB[3]) ** (1 / GB[6])
-    return mcgb
-
-
-# 通过 Mc 估算 GB, AGB and NHe stars 的光度
-# [已校验] Hurley_2000: equation 5.2(37)
-@njit
-def lmcgbf(mc, GB):
-    if mc <= GB[7]:
-        lmcgb = GB[4] * (mc ** GB[5])
-    else:
-        lmcgb = GB[3] * (mc ** GB[6])
-    return lmcgb
-
-
 # A function to evaluate He-ignition luminosity  (OP 24/11/97)
 # Continuity between the LM and IM functions is ensured with a first call setting lhefl = lHeIf(mhefl,0.0)
-# [已校验] Hurley_2000: equation 5.3(49) 第二行有出入
+# [已校验] Hurley_2000: equation 5.3(49)
 @njit
 def lHeIf(m, mhefl, x):
     if m < mhefl:
-        lHeI = x.gbp[38] * m ** x.gbp[39] / (1 + x.gbp[41] * np.exp(m * x.gbp[40]))
+        term = x.gbp[41] * np.exp(x.gbp[40] * (m - x.zpars[2]))
+        lHeI = x.gbp[38] * m ** x.gbp[39] / (1 + term)
     else:
         lHeI = (x.gbp[42] + x.gbp[43] * m ** 3.8) / (x.gbp[44] + m ** 2)
     return lHeI

@@ -2,7 +2,7 @@ import numpy as np
 from zdata import zdata
 from numba import njit
 from star import star
-from zfuncs import lbagbf, rminf, mcgbf, lHeIf, ragbf, lzahbf, rgbf, lHef, tHef, rtmsf
+from zfuncs import lbagbf, rminf, lum_to_mc_gb, lHeIf, ragbf, lzahbf, rgbf, lHef, tHef, rtmsf
 
 
 # 设置所有与金属丰度z有关的公式中的常数（其他地方不再依赖于z）
@@ -29,7 +29,6 @@ from zfuncs import lbagbf, rminf, mcgbf, lHeIf, ragbf, lzahbf, rgbf, lHef, tHef,
 @njit
 def zcnsts_set(x):
     # 这里的 x 就是 Zcnsts 类的实例 zcnsts
-    # from star import star
     z = x.z
     lzs = np.log10(z / 0.02)
     dlzs = 1 / (z * np.log(10))
@@ -276,7 +275,7 @@ def zcnsts_set(x):
     # set x.gbp[41] = -1 until it is reset later with an initial call to Lheif using mass = zpars(2) and mhefl = 0.0
     x.gbp[38] = xh[1] + lzs * xh[2]
     x.gbp[39] = xh[3] + lzs * xh[4]
-    x.gbp[40] = xh[5]
+    x.gbp[40] = xh[5]                   # value is 15
     x.gbp[41] = -1
     x.gbp[42] = xh[6] + lzs * (xh[7] + lzs * xh[8])
     x.gbp[43] = xh[9] + lzs * (xh[10] + lzs * xh[11])
@@ -354,7 +353,7 @@ def zcnsts_set(x):
     # finish LHeI
     dum1 = 0
     lhefl = lHeIf(x.zpars[2], mhefl, x)
-    x.gbp[41] = (x.gbp[38] * x.zpars[2] ** x.gbp[39] - lhefl) / (np.exp(x.zpars[2] * x.gbp[40]) * lhefl)
+    x.gbp[41] = (x.gbp[38] * x.zpars[2] ** x.gbp[39] - lhefl) / lhefl
 
     # finish THe
     thefl = tHef(x.zpars[2], dum1, mhefl, x) * (x.zpars[2])
@@ -373,8 +372,8 @@ def zcnsts_set(x):
     (tm, tn, tscls, lums, GB) = star(kw, x.zpars[2], x.zpars[2], x)
 
     # 这里zpars[9]和zpars[10]分别算的是质量为M_HeF的恒星在BGB和HeI时的核质量
-    x.zpars[9] = mcgbf(lums[3], GB, lums[6])
-    x.zpars[10] = mcgbf(lums[4], GB, lums[6])
+    x.zpars[9] = lum_to_mc_gb(lums[3], GB, lums[6])
+    x.zpars[10] = lum_to_mc_gb(lums[4], GB, lums[6])
     # set the hydrogen and helium abundances
     x.zpars[11] = 0.76 - 3 * z
     x.zpars[12] = 0.24 + 2 * z

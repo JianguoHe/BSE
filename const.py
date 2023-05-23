@@ -13,9 +13,9 @@ sep_min = 3                             # 最小轨道间距
 sep_max = 1e4                           # 最大轨道间距
 
 # 演化参数
-alpha = 1.0  # 公共包层效率参数(1)
-SNtype = 1  # 超新星类型(1,2,3分别对应于rapid,delayed,stochastic)
-tiny = 1e-14  # 小量
+alpha = 1.0                             # 公共包层效率参数(1)
+SNtype = 1                              # 超新星类型(1,2,3分别对应于rapid,delayed,stochastic)
+tiny = 1e-14                            # 小量
 
 ceflag = 3                              # ceflag > 0 activates spin-energy correction in common-envelope (0).
 # ceflag = 3                            activates de Kool common-envelope model
@@ -34,6 +34,11 @@ sigma = 265.0                           # 超新星速度踢的麦克斯韦分�
 wind_model = 'Belczynski'               # 星风质量损失模型【option: 'Hurley', 'Belczynski'】
 mb_model = 'Rappaport1983'              # 磁制动模型【'Hurley2002', 'Rappaport1983'】
 mb_gamma = 3                            # 磁制动指数
+ecc_scheme = 'zero'                     # 初始偏心率分布【'zero', 'uniform'】
+
+
+# 随机数
+RNG1 = np.random.default_rng(1)          # 初始偏心率 - 随机数生成器
 
 # 数值常量
 mch = 1.44                              # 钱德拉塞卡极限（太阳质量）
@@ -59,7 +64,7 @@ ktype = instar()
 # 星风质损相关常数
 eta = 0.5                               # Reimers 质量损失系数(默认为0.5)
 bwind = 0.0                             # Reimers 质量损失潮汐增强参数(默认为0)
-f_WR = 1.0                              # 氦星质损定标因子(默认为1)
+f_WR = 0.5                              # 氦星质损定标因子(范围0-1)
 f_LBV = 1.5                             # LBV质损定标因子(默认为1.5)
 
 # 星风吸积相关常数
@@ -75,7 +80,7 @@ spec = [('BH_BH', float64[:, :]), ('BH_NS', float64[:, :]), ('BH_WD', float64[:,
 
 
 @jitclass(spec)
-class Find_BH_CS(object):
+class FindBHCS(object):
     def __init__(self, BH_BH, BH_NS, BH_WD, NS_NS, NS_WD, WD_WD, Merger):
         self.BH_BH = BH_BH
         self.BH_NS = BH_NS
@@ -93,7 +98,7 @@ NS_NS = BH_BH.copy()
 NS_WD = BH_BH.copy()
 WD_WD = BH_BH.copy()
 Merger = np.empty(shape=(0, 20))
-find = Find_BH_CS(BH_BH, BH_NS, BH_WD, NS_NS, NS_WD, WD_WD, Merger)
+find = FindBHCS(BH_BH, BH_NS, BH_WD, NS_NS, NS_WD, WD_WD, Merger)
 
 # 单个双星系统演化数据存储数组（以类的形式保存）
 spec0 = [('bcm', float64[:, :]), ('bpp', float64[:, :])]

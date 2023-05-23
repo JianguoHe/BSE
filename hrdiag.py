@@ -5,9 +5,9 @@ from mrenv import mrenv
 from supernova import supernova
 from const import SNtype, ifflag, nsflag, wdflag, mxns, mch, Rsun, tiny
 from zfuncs import thook_div_tBGB, tblf, lalphaf, lbetaf, letaf, lhookf, lgbtf
-from zfuncs import lmcgbf, lzhef, lpertf, rzamsf, rtmsf, ralphaf, rbetaf, rgammaf
+from zfuncs import mc_to_lum_gb, lzhef, lpertf, rzamsf, rtmsf, ralphaf, rbetaf, rgammaf
 from zfuncs import rhookf, rgbf, rminf, ragbf, rzahbf, rzhef, rhehgf, rhegbf
-from zfuncs import rpertf, mcTMS_div_mcEHG, mcgbtf, mcgbf, mcheif, mcagbf
+from zfuncs import rpertf, mcTMS_div_mcEHG, mcgbtf, lum_to_mc_gb, mcheif, mcagbf
 
 
 # 用途: 确定恒星目前处于哪一个演化阶段(kw, age), 然后计算当前光度、半径、核质量、恒星类型
@@ -112,7 +112,7 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
                 # 计算核质量
                 mcx = mc
                 if mass <= zcnsts.zpars[2]:
-                    mcEHG = mcgbf(lums[3], GB, lums[6])
+                    mcEHG = lum_to_mc_gb(lums[3], GB, lums[6])
                 elif mass <= zcnsts.zpars[3]:
                     mcEHG = mcheif(mass, zcnsts.zpars[2], zcnsts.zpars[9], zcnsts)
                 else:
@@ -170,7 +170,7 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
             # 计算核质量(对于核是否简并有不同的核质量公式)
             # 恒星在GB阶段拥有简并核, 且核的质量不断增长
             if mass <= zcnsts.zpars[2]:
-                mc = mcgbf(lum, GB, lums[6])
+                mc = lum_to_mc_gb(lum, GB, lums[6])
             # 恒星在GB阶段拥有非简并核, 核的质量轻微增长（BGB和HeI的核质量基本不怎么变）
             else:
                 tau = (aj - tscls[1])/(tscls[2] - tscls[1])
@@ -201,7 +201,7 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
 
             # 计算核质量
             if mass <= zcnsts.zpars[2]:
-                mchei = mcgbf(lums[4], GB, lums[6])
+                mchei = lum_to_mc_gb(lums[4], GB, lums[6])
             else:
                 mchei = mcheif(mass, zcnsts.zpars[2], zcnsts.zpars[10], zcnsts)
             tau = (aj - tscls[2]) / tscls[3]
@@ -314,7 +314,7 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
                 kw = 5
                 mc = mcbagb
                 mcx = mcgbtf(aj, GB[8], GB, tscls[7], tscls[8], tscls[9])
-                lum = lmcgbf(mcx, GB)
+                lum = mc_to_lum_gb(mcx, GB)
                 # Evolved naked helium star as the envelope is lost but the star has not completed its interior burning.
                 # The star becomes a post-HeMS star.
                 if mc >= mt:
@@ -335,7 +335,7 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
                 kw = 6
                 mcx = mcgbtf(tscls[13], GB[2], GB, tscls[10], tscls[11], tscls[12])   # TPAGB开始时的CO核质量
                 mc = mcgbtf(aj, GB[2], GB, tscls[10], tscls[11], tscls[12])           # TPAGB开始后没有三次挖掘时的CO核质量
-                lum = lmcgbf(mc, GB)
+                lum = mc_to_lum_gb(mc, GB)
                 # 由于三次挖掘(3rd Dredge-up), Mc的增长变缓
                 f_lambda = min(0.9, 0.3 + 0.001 * mass ** 5)
                 mc = mc - f_lambda * (mc - mcx)
@@ -420,7 +420,7 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
             if r >= rg:
                 kw = 9
                 r = rg
-            mc = mcgbf(lum, GB, lums[6])
+            mc = lum_to_mc_gb(lum, GB, lums[6])
             mcmax = min(mt, 1.45 * mt - 0.31)    # 【疑问】这里为什么也是用当前质量mt
             mcmax = min(mcmax, max(mch, 0.773 * mass - 0.35))
             if mcmax - mc < tiny:
@@ -549,7 +549,7 @@ def hrdiag(mass, aj, mt, tm, tn, tscls, lums, GB, zcnsts, r, lum, kw, mc, rc, me
         if tn > tbagb:
             tau = 3.0 * (aj - tbagb) / (tn - tbagb)
         (tm, tn, tscls, lums, GB) = star(kw_temp, mc, mc, zcnsts)
-        lc = lmcgbf(mcx, GB)
+        lc = mc_to_lum_gb(mcx, GB)
         if tau < 1.0:
             lc = lums[2] * (lc / lums[2]) ** tau
         rc = rzhef(mc)

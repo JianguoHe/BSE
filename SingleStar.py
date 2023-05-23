@@ -113,7 +113,7 @@ class SingleStar:
     def cal_mdot_wind_Belczynski(self, ecc):
         mdot_OB = self.cal_mdot_OB()
         mdot_KR = self.cal_mdot_KR(ecc=ecc)
-        mdot_WR_Z_dependent = self.cal_mdot_WR_Z_dependent()
+        mdot_WR = self.cal_mdot_WR(z_dependent=True)
         mdot_LBV_Belczynski = self.cal_mdot_LBV_Belczynski()
 
         # LBV星
@@ -121,7 +121,7 @@ class SingleStar:
             return mdot_LBV_Belczynski
         # 氦星
         if 7 <= self.type <= 9:
-            return max(mdot_KR, mdot_WR_Z_dependent)
+            return max(mdot_KR, mdot_WR)
         # OB星
         if mdot_OB > 0:
             return mdot_OB
@@ -186,27 +186,14 @@ class SingleStar:
 
     # calculate mass loss of Wolf–Rayet like star with small H-envelope mass
     # Hurley et al. 2000, just after eq 106 (taken from Hamann, Koesterke & Wessolowski 1995, Hamann & Koesterke 1998)
-    def cal_mdot_WR(self):
+    # Belczynski et al. 2010, eq 9 when z_dependent is True
+    def cal_mdot_WR(self, z_dependent=False):
         lum0 = 7e4
         kap = -0.5
         mu = (self.mass - self.mass_core) / self.mass * min(5.0, max(1.2, (self.L / lum0) ** kap))
-        if mu < 1.0:
-            mdot_WR = 1.0e-13 * self.L ** 1.5 * (1.0 - mu)
-        else:
-            mdot_WR = 0
+        mdot_WR = f_WR * 1.0e-13 * self.L ** 1.5 * (1.0 - mu) if mu < 1.0 else 0
+        mdot_WR = mdot_WR * (self.Z / Zsun) ** 0.86 if z_dependent else mdot_WR
         return mdot_WR
-
-    # calculate mass loss of Wolf–Rayet like star with small H-envelope mass (Z-dependent)
-    # Belczynski et al. 2010, eq 9 (taken from Hamann, Koesterke & Wessolowski 1995, Hamann & Koesterke 1998)
-    def cal_mdot_WR_Z_dependent(self):
-        lum0 = 7e4
-        kap = -0.5
-        mu = (self.mass - self.mass_core) / self.mass * min(5.0, max(1.2, (self.L / lum0) ** kap))
-        if mu < 1.0:
-            mdot_WR_Z_dependent = f_WR * 1.0e-13 * self.L ** 1.5 * (self.Z / Zsun) ** 0.86 * (1.0 - mu)
-        else:
-            mdot_WR_Z_dependent = 0
-        return mdot_WR_Z_dependent
 
     # Calculate LBV-like mass loss rate for stars beyond the Humphreys-Davidson limit (Humphreys & Davidson 1994)
     # Hurley+ 2000 Section 7.1 a few equation after Eq. 106 (Equation not labelled)

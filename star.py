@@ -1,5 +1,5 @@
-from zfuncs import lzamsf, lzahbf, lzhef, ltmsf, lbgbf, lHeIf, lHef, lbagbf, lmcgbf
-from zfuncs import tbgbf, thook_div_tBGB, tHef, themsf, mcgbf, mcagbf, mcheif, mcgbtf
+from zfuncs import lzamsf, lzahbf, lzhef, ltmsf, lbgbf, lHeIf, lHef, lbagbf, mc_to_lum_gb
+from zfuncs import tbgbf, thook_div_tBGB, tHef, themsf, lum_to_mc_gb, mcagbf, mcheif, mcgbtf
 from const import mch
 from numba import njit
 import numpy as np
@@ -64,7 +64,7 @@ def star(kw, mass0, mt, zcnsts):
         # Change in slope of giant L-Mc relation
         lums[6] = GB[4] * GB[7] ** GB[5]
         # 设置 He 星的 GB 时标(下面的mc1表示HeMS末尾的核质量)
-        mc1 = mcgbf(lums[2], GB, lums[6])
+        mc1 = lum_to_mc_gb(lums[2], GB, lums[6])
         tscls[4] = tm + (1 / ((GB[5] - 1) * GB[8] * GB[4])) * mc1 ** (1 - GB[5])
         tscls[6] = tscls[4] - (tscls[4] - tm) * ((GB[7] / mc1) ** (1 - GB[5]))
         tscls[5] = tscls[6] + (1 / ((GB[6] - 1) * GB[8] * GB[3])) * GB[7] ** (1 - GB[6])
@@ -141,7 +141,7 @@ def star(kw, mass0, mt, zcnsts):
             tscls[2] = tscls[5] - (1 / ((GB[6] - 1) * GB[1] * GB[3])) * ((GB[3] / lums[4]) ** ((GB[6] - 1) / GB[6]))
         # 小质量恒星
         if mass <= zcnsts.zpars[2]:
-            mc1 = mcgbf(lums[4], GB, lums[6])
+            mc1 = lum_to_mc_gb(lums[4], GB, lums[6])
             lums[5] = lzahbf(mass, mc1, zcnsts.zpars[2], zcnsts)
             tscls[3] = tHef(mass, mc1, zcnsts.zpars[2], zcnsts)
         # 中等质量恒星
@@ -162,7 +162,7 @@ def star(kw, mass0, mt, zcnsts):
 
     # 设置巨星分支底部的核质量
     if mass <= zcnsts.zpars[2]:
-        GB[9] = mcgbf(lums[3], GB, lums[6])
+        GB[9] = lum_to_mc_gb(lums[3], GB, lums[6])
     elif mass <= zcnsts.zpars[3]:
         GB[9] = mcheif(mass, zcnsts.zpars[2], zcnsts.zpars[9], zcnsts)
     else:
@@ -180,7 +180,7 @@ def star(kw, mass0, mt, zcnsts):
     # The star undergoes dredge-up at Ltp causing a decrease in Mc,He
     if 0.8 <= mc1 < 2.25:
         mc1 = 0.44 * mc1 + 0.448
-    lums[8] = lmcgbf(mc1, GB)
+    lums[8] = mc_to_lum_gb(mc1, GB)
     if mc1 <= GB[7]:
         tscls[13] = tscls[7] - (1 / ((GB[5] - 1) * GB[8] * GB[4])) * (mc1 ** (1 - GB[5]))
     else:
@@ -245,8 +245,8 @@ def star(kw, mass0, mt, zcnsts):
                     tn = tscls[2] + tscls[3] * ((mt - mc1) / (mcbagb - mc1))
             # 小质量恒星
             elif mass <= zcnsts.zpars[2]:
-                mc1 = mcgbf(lums[3], GB, lums[6])
-                mc2 = mcgbf(lums[4], GB, lums[6])
+                mc1 = lum_to_mc_gb(lums[3], GB, lums[6])
+                mc2 = lum_to_mc_gb(lums[4], GB, lums[6])
                 if mt <= mc1:
                     tn = tscls[1]
                 elif mt <= mc2:
