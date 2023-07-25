@@ -1,7 +1,8 @@
 from numba import float64, int64, types
 from numba.experimental import jitclass
 import numpy as np
-from const import gamma_mb, mb_model, yearsc, Zsun, neta, bwind, f_WR, f_LBV, Rsun, Teffsun
+from const_new import gamma_mb, mb_model, yearsc, Zsun, neta, bwind, f_WR, f_LBV, Rsun, Teffsun
+from zcnst import zcnsts_set
 
 
 # Single star class
@@ -14,8 +15,6 @@ from const import gamma_mb, mb_model, yearsc, Zsun, neta, bwind, f_WR, f_LBV, Rs
     ('L', float64),                         # luminosity (solar units)
     ('dt', float64),                        # evolution timestep
     ('Teff', float64),                      # effective temperature (K)
-    # ('spin', float64),                    # the dimesionless spin of the star, if it is a compact object,
-    #                                       # which is equal to c*J/(GM^2).
     ('spin', float64),                      # 自旋角频率(unit: /yr)
     ('jspin', float64),                     # 自旋角动量(unit: Msun * Rsun2 / yr)
     ('rochelobe', float64),                 # 洛希瓣半径(unit: Rsun)
@@ -37,8 +36,11 @@ from const import gamma_mb, mb_model, yearsc, Zsun, neta, bwind, f_WR, f_LBV, Rs
     ('max_time', float64),                  # 最长演化时间        [unit: Myr]
     ('time', float64),                      # 当前的演化时间        [unit: Myr]
     ('max_step', float64),                  # 最大演化步长
-    ('step', int64),                      # 当前的演化步长
+    ('step', int64),                        # 当前的演化步长
     ('data', float64[:, :]),                # 存储每个步长的属性
+    ('zpars', float64[:]),               # 存储每个步长的属性
+    ('msp', float64[:]),                 # 存储每个步长的属性
+    ('gbp', float64[:]),                 # 存储每个步长的属性
 ])
 class SingleStar:
     def __init__(self, type, Z, mass, R=0, L=0, dt=1e6, Teff=0, spin=0, jspin=0, rochelobe=0,
@@ -77,6 +79,15 @@ class SingleStar:
         self.max_step = max_step
         self.step = step
         self.data = np.zeros((max_step, 30))
+        self.zpars = np.zeros(20)
+        self.msp = np.zeros(200)
+        self.gbp = np.zeros(200)
+
+    # 计算金属丰度相关常数
+    def _set_jorb(self):
+        reduced_mass = self.star1.mass * self.star2.mass / self.totalmass
+        jorb = reduced_mass * self.omega * self.sep ** 2 * np.sqrt(1 - self.ecc ** 2)
+        return jorb
 
     # 计算表面温度
     def cal_Teff(self):
@@ -100,7 +111,6 @@ class SingleStar:
         self.data[self.step, 6] = np.log10(self.L)
         self.data[self.step, 7] = self.spin
         self.data[self.step, 8] = self.Teff
-
 
     # ------------------------------------------------------------------------------------------------------------------
     #                                                      磁制动

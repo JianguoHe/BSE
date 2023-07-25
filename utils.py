@@ -118,7 +118,7 @@ def cal_z(Fe_H):
 
 
 # 估算洛希瓣半径
-@conditional_njit()
+@njit
 def rochelobe(q):
     p = q ** (1 / 3)
     rl = 0.49 * p * p / (0.6 * p * p + np.log(1 + p))

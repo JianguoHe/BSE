@@ -11,6 +11,7 @@ binary.evolve()
 print(binary.sep, binary.period, binary.jorb, binary.jdot_gr)
 print(star1.rochelobe, star2.rochelobe)
 print(binary.state, binary.event)
+print(star1.zpars)
 
 
 

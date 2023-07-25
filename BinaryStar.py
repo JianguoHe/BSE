@@ -1,11 +1,10 @@
 from numba import float64, int64, types
 from numba.experimental import jitclass
 import numpy as np
-from const import yeardy, alpha_wind, kick, output, find, SNtype, G, Msun, Rsun, beta_wind, tiny
-from const import wind_model, acc1, yeardy, sep_to_period, period_to_sep, mu_wind
-from zfuncs import rochelobe
+from const_new import alpha_wind, beta_wind
+from const_new import wind_model, acc1, yeardy, sep_to_period, period_to_sep, mu_wind
 from SingleStar import SingleStar
-# from stellerwind import steller_wind
+from utils import rochelobe
 
 
 # Binary star class
@@ -150,27 +149,29 @@ class BinaryStar:
 
     # 演化双星
     def evolve(self):
+
         # 考虑星风的影响（质量/自旋角动量/轨道角动量的减少/增加）
-        self.steller_wind()
+        # self.steller_wind()
         # 考虑双星的磁制动影响（自旋角动量的减少）
-        self.star1.magnetic_braking()
-        self.star2.magnetic_braking()
+        # self.star1.magnetic_braking()
+        # self.star2.magnetic_braking()
         # 考虑引力波辐射的影响(轨道角动量的减少)
-        self.GW_radiation()
+        # self.GW_radiation()
         # 考虑潮汐的圆化、轨道收缩和自旋 [待完善]
 
         # 限制最大 0.2% 的轨道角动量变化
-        self.jdot = self.jdot_wind + self.jdot_gr + self.jdot_mb
-        self.dt = min(0.002 * self.jorb / self.jdot, self.star1.dt, self.star2.dt)
+        # self.jdot = self.jdot_wind + self.jdot_gr + self.jdot_mb
+        # self.dt = min(0.002 * self.jorb / self.jdot, self.star1.dt, self.star2.dt)
 
         # 对于非致密星, 每次质量损失不超过包层质量, 且限制 1% [待完善]
 
         # 更新质量和自旋
-        self.star1.reset(self.dt)
-        self.star2.reset(self.dt)
+        # self.star1.reset(self.dt)
+        # self.star2.reset(self.dt)
 
         # 确保恒星的自旋不会瓦解 [待完善]
 
         # 更新轨道的角动量/偏心率/半长轴/周期/角频率
 
-
+        # 跳过
+        pass

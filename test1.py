@@ -1,34 +1,17 @@
 from const import G, Rsun, Msun, yearsc
 import numpy as np
 import random
-from const import zcnsts
 from zcnst import zcnsts_set
 from zfuncs import rgbf, lbgbf, lHeIf
 import matplotlib.pyplot as plt
-from const import RNG1_number
 import concurrent.futures
 from numba.experimental import jitclass
 from numba import types
 
-from numba import float64, njit
-
-@njit
-def compute_density(mass, volume):
-    return mass / volume
-
-spec = [
-    ('mass_kg', float64),
-    ('volume_m3', float64),
-]
-
-@jitclass(spec)
-class Object:
-    def __init__(self, mass_kg, volume_m3):
-        self.mass_kg = mass_kg
-        self.volume_m3 = volume_m3
-
-    def get_density(self):
-        return compute_density(self.mass_kg, self.volume_m3)  # 可以编译通过，compute_density被修饰为njit
+a = np.zeros(20)
+b = np.zeros((1, 20)).flatten()
+print(a)
+print(b)
 
 # sigma = 1.0  # 麦克斯韦分布的标准差
 # n = 1000000

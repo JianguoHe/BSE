@@ -15,7 +15,7 @@ sep_max = 1e4                           # 最大轨道间距
 
 
 # 控制参数
-njit_enabled = False            # 是否使用numba.njit修饰器加速程序
+njit_enabled = True            # 是否使用numba.njit修饰器加速程序
 ecc_scheme = 'zero'             # 初始偏心率分布模型 [option: 'zero', 'uniform', 'thermal']
 HG_survive_CE = True            # allow HG to survive CE evolution if HG_survive_CE is True
 IMF_scheme = 'Kroupa1993'       # 初始质量函数 [option: 'Kroupa1993', 'Weisz2015']
