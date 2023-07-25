@@ -84,7 +84,6 @@ class BinaryStar:
         self.edot = self.edot_gr + self.edot_wind + self.edot_tide
         self.ecc = self.ecc + self.edot * self.dt
 
-
     # 计算洛希瓣半径
     def cal_radius_rochelobe(self):
         self.star1.rochelobe = self.sep * rochelobe(self.q1)
@@ -173,5 +172,3 @@ class BinaryStar:
         # 确保恒星的自旋不会瓦解 [待完善]
 
         # 更新轨道的角动量/偏心率/半长轴/周期/角频率
-    def testt():
-        return 0
