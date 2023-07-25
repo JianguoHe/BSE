@@ -81,9 +81,9 @@ def supernova(mt, mc, mc_CO_he, SNtype, kick):
             pcf = 1.0
         # 中子星
         if mc < m11:
+            kw = 13
             mean0 = 1.2
             sigma0 = 0.02
-            kw = 13
             mt = max(1.13, random.gauss(mean0, sigma0))
         # 中子星或黑洞
         elif m11 <= mc < m33:

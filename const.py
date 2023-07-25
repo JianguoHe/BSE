@@ -4,7 +4,7 @@ from numba import float64
 from numba.experimental import jitclass
 
 # 星族合成参数
-num_evolve = 1e5                        # 演化的双星数量
+num_evolve = 1e1                        # 演化的双星数量
 m1_min = 5                              # 恒星1的最小质量
 m1_max = 50                             # 恒星1的最大质量
 m2_min = 0.5                            # 恒星2的最小质量
@@ -39,6 +39,8 @@ ecc_scheme = 'zero'                     # 初始偏心率分布【'zero', 'unifo
 
 # 随机数
 RNG1 = np.random.default_rng(1)          # 初始偏心率 - 随机数生成器
+RNG1_number = RNG1.random(int(num_evolve))
+
 
 # 数值常量
 mch = 1.44                              # 钱德拉塞卡极限（太阳质量）

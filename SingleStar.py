@@ -6,9 +6,6 @@ from const import mb_gamma, mb_model, yearsc, Zsun, eta, bwind, f_WR, f_LBV, win
 from zfuncs import rochelobe
 
 
-# from stellerwind import steller_wind
-
-
 # Single star class
 @jitclass([
     ('type', float64),                      # steller type
@@ -34,25 +31,25 @@ from zfuncs import rochelobe
     ('radius_c_core', float64),             # in solar units
     ('radius_o_core', float64),             # in solar units
     ('radius_co_core', float64),            # in solar units
-    ('mdot_wind_loss', float64),            # 星风质量损失率(对于双星可能吸积次星的质量, 不一定为负)
-    ('mdot_wind_accrete', float64),         # 星风质量吸积
+    ('mdot_wind_loss', float64),            # 星风质量损失率
+    ('mdot_wind_accrete', float64),         # 星风质量吸积率
     ('jdot_spin_wind', float64),            # 星风提取的自旋角动量
     ('jdot_spin_mb', float64),              # 磁制动提取的自旋角动量
 ])
 class SingleStar:
-    def __init__(self, type, Z, mass, R=0, L=0, dt=0, Teff=0, spin=0, jspin=0, rochelobe=0,
+    def __init__(self, type, Z, mass, R=0, L=0, dt=1e6, Teff=0, spin=0, jspin=0, rochelobe=0,
                  mass_core=0, mass_he_core=0, mass_c_core=0, mass_o_core=0, mass_co_core=0, mass_envelop=0,
                  radius_core=0, radius_he_core=0, radius_c_core=0, radius_o_core=0, radius_co_core=0,
                  mdot_wind_loss=0, mdot_wind_accrete=0, jdot_spin_wind=0, jdot_spin_mb=0):
         self.type = type
+        self.Z = Z
         self.mass = mass
         self.R = R
         self.L = L
+        self.dt = dt
         self.Teff = Teff
         self.spin = spin
         self.jspin = jspin
-        self.Z = Z
-        self.dt = dt
         self.rochelobe = rochelobe
         self.mass_core = mass_core
         self.mass_he_core = mass_he_core
@@ -74,6 +71,14 @@ class SingleStar:
     def cal_Teff(self):
         self.Teff = Teffsun * (self.L / self.R ** 2.0) ** (1.0 / 4.0)
 
+    # 更新质量和自旋角动量
+    def reset(self, dt):
+        self.mass = self.mass + (self.mdot_wind_accrete + self.mdot_wind_accrete) * dt
+        self.jspin = self.jspin + (self.jdot_spin_mb + self.jdot_spin_wind) * dt
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #                                                      磁制动
+    # ------------------------------------------------------------------------------------------------------------------
     # 考虑磁制动的影响
     def magnetic_braking(self):
         # 计算有明显对流包层的恒星因磁制动损失的自旋角动量, 包括主序星(M < 1.25)、靠近巨星分支的HG恒星以及巨星, 不包括完全对流主序星
