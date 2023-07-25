@@ -1,8 +1,9 @@
 import numpy as np
-from numba import njit
-# 数据
+from utils import conditional_njit
 
-@njit
+
+# 数据
+@conditional_njit()
 def zdata():
     # data for Lzams(1->35) and Rzams(36->76)
     xz = np.array([0, 3.970417e-01, -3.2913574e-01, 3.4776688e-01, 3.7470851e-01,

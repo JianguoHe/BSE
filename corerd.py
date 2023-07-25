@@ -1,9 +1,9 @@
 import numpy as np
 from const import mch
-from numba import njit
+from utils import conditional_njit
 
 
-@njit
+@conditional_njit()
 def corerd(kw, mc, m0, mflash):
     if kw == 14:
         corerd = 4.24e-06*mc

@@ -1,6 +1,6 @@
 import numpy as np
 from zdata import zdata
-from numba import njit
+from utils import conditional_njit
 from star import star
 from zfuncs import lbagbf, rminf, lum_to_mc_gb, lHeIf, ragbf, lzahbf, rgbf, lHef, tHef, rtmsf
 
@@ -26,9 +26,10 @@ from zfuncs import lbagbf, rminf, lum_to_mc_gb, lHeIf, ragbf, lzahbf, rgbf, lHef
 # a = msp = np.zeros((1, 200)).flatten()
 # b = gbp = np.zeros((1, 200)).flatten()
 
-@njit
+@conditional_njit()
 def zcnsts_set(x):
     # 这里的 x 就是 Zcnsts 类的实例 zcnsts
+    # from star import star
     z = x.z
     lzs = np.log10(z / 0.02)
     dlzs = 1 / (z * np.log(10))
@@ -202,7 +203,7 @@ def zcnsts_set(x):
     x.msp[95] = 0.063 + lzs * (0.0481 + 0.00984 * lzs)
     x.msp[96] = min(1.3, max(0.45, 1.2 + 2.45 * lzs))
 
-    # Leta
+    # Lneta
     if z > 0.0009:
         x.msp[97] = 10
     else:
@@ -275,7 +276,7 @@ def zcnsts_set(x):
     # set x.gbp[41] = -1 until it is reset later with an initial call to Lheif using mass = zpars(2) and mhefl = 0.0
     x.gbp[38] = xh[1] + lzs * xh[2]
     x.gbp[39] = xh[3] + lzs * xh[4]
-    x.gbp[40] = xh[5]                   # value is 15
+    x.gbp[40] = xh[5]
     x.gbp[41] = -1
     x.gbp[42] = xh[6] + lzs * (xh[7] + lzs * xh[8])
     x.gbp[43] = xh[9] + lzs * (xh[10] + lzs * xh[11])
@@ -353,7 +354,7 @@ def zcnsts_set(x):
     # finish LHeI
     dum1 = 0
     lhefl = lHeIf(x.zpars[2], mhefl, x)
-    x.gbp[41] = (x.gbp[38] * x.zpars[2] ** x.gbp[39] - lhefl) / lhefl
+    x.gbp[41] = (x.gbp[38] * x.zpars[2] ** x.gbp[39] - lhefl) / (np.exp(x.zpars[2] * x.gbp[40]) * lhefl)
 
     # finish THe
     thefl = tHef(x.zpars[2], dum1, mhefl, x) * (x.zpars[2])

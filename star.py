@@ -1,7 +1,7 @@
 from zfuncs import lzamsf, lzahbf, lzhef, ltmsf, lbgbf, lHeIf, lHef, lbagbf, mc_to_lum_gb
 from zfuncs import tbgbf, thook_div_tBGB, tHef, themsf, lum_to_mc_gb, mcagbf, mcheif, mcgbtf
 from const import mch
-from numba import njit
+from utils import conditional_njit
 import numpy as np
 
 
@@ -33,7 +33,7 @@ import numpy as np
 #       ------------------------------------------------------------
 
 
-@njit
+@conditional_njit()
 def star(kw, mass0, mt, zcnsts):
     # 输入 kw, mass0, mt, zcnsts
 

@@ -1,9 +1,9 @@
 from const import pts1, pts2, pts3
-from numba import njit
+from utils import conditional_njit
 
 
 # 确定恒星演化的更新步长
-@njit
+@conditional_njit()
 def timestep(kw, age, tm, tn, tscls, dt):
     # 输入: kw, age, tm, tn, tscls, dt
     # 输出: dt, dtr(只有当确定致密星的下一步演化时长需要用到旧的步长)

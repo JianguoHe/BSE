@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit
+from utils import conditional_njit
 
 
 # 估算对流包层的质量、半径, 以及包层的 gyration radius
@@ -23,8 +23,8 @@ from numba import njit
 # and for kw = 4 either GB or AGB radius at present luminosity.
 
 
-@njit
-def mrenv(kw, mass, mt, mc, lum, rad, rc, aj, tm, ltms, lbgb, lhei, rzams, rtms, rg, menv, renv, k2e):
+@conditional_njit()
+def mrenv(kw, mass, mt, mc, lum, rad, rc, aj, tm, ltms, lbgb, lhei, rzams, rtms, rg, k2e):
     logm = np.log10(mass)
     A = min(0.81, max(0.68, 0.68 + 0.4 * logm))
     C = max(-2.5, min(-1.5, -2.5 + 5.0 * logm))
@@ -91,7 +91,7 @@ def mrenv(kw, mass, mt, mc, lum, rad, rc, aj, tm, ltms, lbgb, lhei, rzams, rtms,
             k2e = 0.080 - 0.030 * tau
         # Rough fit for HeHG stars.
         elif kw <= 9:
-            k2e = 0.080 * rzams / rad
+            k2e = 0.08 * rzams / rad
 
         # tauenv measures proximity to the Hayashi track in terms of Teff.
         # If tauenv > 0 then an appreciable convective envelope is present, and k^2 needs to be modified.

@@ -1,11 +1,11 @@
 import numpy as np
 from star import star
 from zfuncs import mcheif,mcagbf,mheif,mbagbf,lum_to_mc_gb,mc_to_lum_gb,lbgbf,lbgbdf
-from numba import njit
+from utils import conditional_njit
 from const import tiny
 
 
-@njit
+@conditional_njit()
 def gntage(mc, mt, kw, zcnsts, m0, aj):
     # 设置常数
     macc = 0.00001

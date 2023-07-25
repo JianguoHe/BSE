@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit
+from utils import conditional_njit
 from const import data002_1, data002_2, data002_4, data002_6, data002_8
 from const import data002_10, data002_20, data002_30, data002_40, data002_60
 from const import data0001_1, data0001_2, data0001_4, data0001_6, data0001_8
@@ -9,7 +9,7 @@ from const import data00001_10, data00001_20, data00001_30, data00001_40, data00
 
 
 # 公共包层结合能因子λ的计算可以参考文章: 'ON THE BINDING ENERGY PARAMETER λ OF COMMON ENVELOPE EVOLUTION'
-@njit
+@conditional_njit()
 def lambda_cal(m, r, z):
     # 设一些初始值
     Lambda = 1

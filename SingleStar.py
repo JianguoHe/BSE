@@ -1,16 +1,15 @@
 from numba import float64, int64, types
 from numba.experimental import jitclass
 import numpy as np
-from const import acc1, alpha_wind, kick, output, find, SNtype, G, Msun, Rsun, beta_wind, tiny
-from const import mb_gamma, mb_model, yearsc, Zsun, eta, bwind, f_WR, f_LBV, wind_model, Teffsun
-from zfuncs import rochelobe
+from const import gamma_mb, mb_model, yearsc, Zsun, neta, bwind, f_WR, f_LBV, Rsun, Teffsun
 
 
 # Single star class
 @jitclass([
     ('type', float64),                      # steller type
     ('Z', float64),                         # initial mass fraction of metals
-    ('mass', float64),                      # mass (solar units)
+    ('mass0', float64),                     # initial mass (solar units)
+    ('mass', float64),                      # current mass (solar units)
     ('R', float64),                         # radius (solar units)
     ('L', float64),                         # luminosity (solar units)
     ('dt', float64),                        # evolution timestep
@@ -35,14 +34,21 @@ from zfuncs import rochelobe
     ('mdot_wind_accrete', float64),         # 星风质量吸积率
     ('jdot_spin_wind', float64),            # 星风提取的自旋角动量
     ('jdot_spin_mb', float64),              # 磁制动提取的自旋角动量
+    ('max_time', float64),                  # 最长演化时间        [unit: Myr]
+    ('time', float64),                      # 当前的演化时间        [unit: Myr]
+    ('max_step', float64),                  # 最大演化步长
+    ('step', int64),                      # 当前的演化步长
+    ('data', float64[:, :]),                # 存储每个步长的属性
 ])
 class SingleStar:
     def __init__(self, type, Z, mass, R=0, L=0, dt=1e6, Teff=0, spin=0, jspin=0, rochelobe=0,
                  mass_core=0, mass_he_core=0, mass_c_core=0, mass_o_core=0, mass_co_core=0, mass_envelop=0,
                  radius_core=0, radius_he_core=0, radius_c_core=0, radius_o_core=0, radius_co_core=0,
-                 mdot_wind_loss=0, mdot_wind_accrete=0, jdot_spin_wind=0, jdot_spin_mb=0):
+                 mdot_wind_loss=0, mdot_wind_accrete=0, jdot_spin_wind=0, jdot_spin_mb=0,
+                 max_time=10000, time=0, max_step=20000, step=0):
         self.type = type
         self.Z = Z
+        self.mass0 = mass
         self.mass = mass
         self.R = R
         self.L = L
@@ -66,6 +72,11 @@ class SingleStar:
         self.mdot_wind_accrete = mdot_wind_accrete
         self.jdot_spin_wind = jdot_spin_wind
         self.jdot_spin_mb = jdot_spin_mb
+        self.max_time = max_time
+        self.time = time
+        self.max_step = max_step
+        self.step = step
+        self.data = np.zeros((max_step, 30))
 
     # 计算表面温度
     def cal_Teff(self):
@@ -77,6 +88,21 @@ class SingleStar:
         self.jspin = self.jspin + (self.jdot_spin_mb + self.jdot_spin_wind) * dt
 
     # ------------------------------------------------------------------------------------------------------------------
+    #                                                    保存当前属性
+    # ------------------------------------------------------------------------------------------------------------------
+    def save(self):
+        self.data[self.step, 0] = self.time
+        self.data[self.step, 1] = self.type
+        self.data[self.step, 2] = self.mass
+        self.data[self.step, 3] = self.mass_core
+        self.data[self.step, 4] = self.mass_envelop
+        self.data[self.step, 5] = np.log10(self.R)
+        self.data[self.step, 6] = np.log10(self.L)
+        self.data[self.step, 7] = self.spin
+        self.data[self.step, 8] = self.Teff
+
+
+    # ------------------------------------------------------------------------------------------------------------------
     #                                                      磁制动
     # ------------------------------------------------------------------------------------------------------------------
     # 考虑磁制动的影响
@@ -84,7 +110,7 @@ class SingleStar:
         # 计算有明显对流包层的恒星因磁制动损失的自旋角动量, 包括主序星(M < 1.25)、靠近巨星分支的HG恒星以及巨星, 不包括完全对流主序星
         if self.mass > 0.35 and self.type < 10:
             if mb_model == 'Rappaport1983':
-                self.jdot_spin_mb = -3.8e-30 * self.mass * self.R ** mb_gamma * self.spin ** 3 * Rsun ** 2 / yearsc
+                self.jdot_spin_mb = -3.8e-30 * self.mass * self.R ** gamma_mb * self.spin ** 3 * Rsun ** 2 / yearsc
             elif mb_model == 'Hurley2002':
                 self.jdot_spin_mb = -5.83e-16 * self.mass_envelop * (self.R * self.spin) ** 3 / self.mass
             else:
@@ -169,7 +195,7 @@ class SingleStar:
     # Hurley et al. 2000, eq 106 (based on a prescription taken from Kudritzki & Reimers, 1978, A&A, 70, 227)
     def cal_mdot_KR(self, ecc):
         if 2 <= self.type <= 9:
-            mdot_KR = eta * 4.0e-13 * self.R * self.L / self.mass
+            mdot_KR = neta * 4.0e-13 * self.R * self.L / self.mass
             # 考虑 mdot_KR 受潮汐增强(如果应用, 这里可能还需要考虑偏心轨道的情况)
             if self.rochelobe > 0.0:
                 rochelobe_periastron = self.rochelobe * (1.0 - ecc)

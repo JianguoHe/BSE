@@ -10,11 +10,25 @@ import concurrent.futures
 from numba.experimental import jitclass
 from numba import types
 
+from numba import float64, njit
 
+@njit
+def compute_density(mass, volume):
+    return mass / volume
 
-print((10 ** -80) ** 20)
+spec = [
+    ('mass_kg', float64),
+    ('volume_m3', float64),
+]
 
+@jitclass(spec)
+class Object:
+    def __init__(self, mass_kg, volume_m3):
+        self.mass_kg = mass_kg
+        self.volume_m3 = volume_m3
 
+    def get_density(self):
+        return compute_density(self.mass_kg, self.volume_m3)  # 可以编译通过，compute_density被修饰为njit
 
 # sigma = 1.0  # 麦克斯韦分布的标准差
 # n = 1000000

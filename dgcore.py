@@ -1,10 +1,10 @@
 from corerd import corerd
-from numba import njit
+from utils import conditional_njit
 
 
 # 确定两个简并核碰撞或并合的结果
 # Entered with kw1,kw2 = 2 or 3 with M <= Mflash, 6, 10, 11 or 12
-@njit
+@conditional_njit()
 def dgcore(kw1, kw2, kw3, m1, m2, m3, ebinde):
     # 设置常数
     cvhe = 3.1e+07

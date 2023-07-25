@@ -2,12 +2,22 @@ import numpy as np
 from const import ktype, mch, mxns
 from star import star
 from gntage import gntage
-from numba import njit
+from utils import conditional_njit
 
 
 # 模拟恒星碰撞
-@njit
+@conditional_njit()
 def mix(mass0, mass, aj, kstar, zcnsts):
+    # 设置初始值
+    tm1 = 0   # 不同恒星的主序时间
+    tm2 = 0
+    tm3 = 0
+    # 以下几个变量只用于本程序内的过程计算，不影响外部程序
+    tn = 0
+    tscls = np.zeros((1, 21)).flatten()
+    lums = np.zeros((1, 11)).flatten()
+    GB = lums.copy()
+
     # Define global indices with body j1 being most evolved.(演化历程较深的, 即 kw 较大)
     if kstar[1] >= kstar[2]:
         j1 = 1

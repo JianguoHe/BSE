@@ -1,9 +1,7 @@
 import numpy as np
-from numba import njit
 
 
 # 设置碰撞矩阵, 也就是设置双星碰撞后合并产生的新星类型, 对于有类巨星参与的碰撞, 新星类型会加100表示双星会在公共包层演化中发生碰撞
-@njit
 def instar():
     ktype = np.zeros((15, 15))
     ktype[0, 0] = 1

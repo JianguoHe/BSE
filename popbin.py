@@ -1,22 +1,31 @@
+import os
+import time
 import random
+import pysnooper
 import numpy as np
-from numba import njit
-from time import time, strftime, localtime
+import pandas as pd
+import concurrent.futures
 from evolve import evolve
 from zcnst import zcnsts_set
-from zfuncs import weight, SFR_Galaxy
-from const import yeardy, zcnsts, kick, output, find, SNtype, G, Msun, Rsun, num_evolve, alpha
-from const import m1_min, m1_max, m2_min, m2_max, sep_min, sep_max, ecc_scheme
-import concurrent.futures
-import pysnooper
+from utils import Wb_binary, SFR_Galaxy, select
+from const import ecc_scheme
+from const import rng_m1, rng_m2, rng_sep, rng_ecc, rng_z
+from const import yeardy, Zcnsts, Kick, Output, G, Msun, Rsun, num_evolve
+from const import mb_model, gamma_mb, mass_accretion_model, max_WD_mass
 
 
-@njit
-def Find(zcnsts, kick, output, find):
+MA = 'MA1_' if mass_accretion_model == 1 else ('MA2_' if mass_accretion_model == 2 else 'MA3_')
+MB = 'MB1_' if mb_model == 'Hurley2002' else ('MB2_' if gamma_mb == 4 else 'MB3_')
+critical_mass = '02' if max_WD_mass == 0.2 else ('04' if max_WD_mass == 0.4 else '125')
+target_file = './data/' + MA + MB + critical_mass + '.csv'
+
+
+def Find(zcnsts, kick, output, index):
     # 设置初始参数(双星质量、轨道间距)
-    a = random.uniform(np.log(m1_min), np.log(m1_max))
-    b = random.uniform(np.log(m2_min), np.log(m2_max))
-    c = random.uniform(np.log(sep_min), np.log(sep_max))
+    a = rng_m1[index]
+    b = rng_m2[index]
+    c = rng_sep[index]
+
     m1 = np.exp(a)          # 范围是(5, 50)
     m2 = np.exp(b)          # 范围是(0.5, 50)
     sep = np.exp(c)         # 双星间距，范围是(3, 10000)
@@ -24,20 +33,17 @@ def Find(zcnsts, kick, output, find):
     # 初始轨道周期(单位: 天), 范围为 0.04 - 49393
     tb = 2 * np.pi * (sep * Rsun) ** (3 / 2) * (G * Msun * (m1 + m2)) ** (-1 / 2) / (3600 * 24)
 
+    # 单个特殊值
+    # m1 = 10
+    # m2 = 4
+    # tb = 5000
+
     # 排除 m1 小于 m2 的情况
     if m1 < m2:
         return
 
-    # # 应用【Alex. J. Kemp，21】中的 12-grid, 在固定值中随机取金属丰度, 同时记录金属丰度所在区间的起止时间以及间隔
-    # z_value = np.array([0.0002, 0.0005, 0.001, 0.002, 0.003, 0.005, 0.008, 0.01, 0.0125, 0.015, 0.0175, 0.02])
-    # z = np.random.choice(z_value)
-    # ind = np.abs(z - z_value).argmin()
-    # time_start = np.array([0.0, 80, 200, 450, 700, 1200, 2000, 3333, 5000, 6666, 8333, 10000])[ind]
-    # time_end = np.array([80.0, 200, 450, 700, 1200, 2000, 3333, 5000, 6666, 8333, 10000, 14000])[ind]
-    # time_interval = time_end - time_start
-
     # 计算双星的权重
-    Wb = weight(m1, m2)
+    Wb = Wb_binary(m1, m2)
 
     # 计算 zcnsts 参数
     z = 0.02
@@ -52,9 +58,12 @@ def Find(zcnsts, kick, output, find):
     if ecc_scheme == 'zero':
         ecc = 0.0
     elif ecc_scheme == 'uniform':
-        ecc = random.random()
+        ecc_value = np.array([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+        ecc = ecc_value[rng_ecc[index]]
+    elif ecc_scheme == 'thermal':
+        ecc = np.sqrt(random.random())
     else:
-        raise ValueError("Please provide an allowed eccentricity scheme.")
+        raise ValueError("Please provide an allowed scheme of initial eccentricity.")
 
     # 初始化参数
     kstar = np.array([0.0, 1, 1])
@@ -79,201 +88,115 @@ def Find(zcnsts, kick, output, find):
 
     # 演化双星
     evolve(kstar, mass0, mass, rad, lum, massc, radc, menv, renv,
-           ospin, epoch, tms, tphys, tphysf, dtp, z, zcnsts, tb, ecc, kick, output)
+           ospin, epoch, tms, tphys, tphysf, dtp, z, zcnsts, tb, ecc, kick, output, index)
 
-    # 首先排除原恒星在进入主序之前就开始物质转移（通常出现在分子云盘中）
-    if 0.0 < output.bcm[1, 15] < 1.0 and 0.0 < output.bcm[1, 29] < 1.0:
-        jj = 0
-        t1 = -1.0
-        t2 = -1.0
-        t3 = -1.0
+    result = output.bcm[:np.where(output.bcm[:, 1] == -1)[0][0], :]
+    result[:, 0] = index
+    result[:, 30] = result[:, 30] * yeardy
 
-        while True:
-            jj = jj + 1
-            if output.bcm[jj, 1] < 0.0:
-                return
-            kw = int(output.bcm[jj, 2])
-            kw2 = int(output.bcm[jj, 16])
+    # 定义列名
+    column_names = ['index', 'time', 'kw1', 'mass1_initial', 'mass1', 'lg(L1)', 'lg(r1)', 'lg(T1)', 'mc1', 'rc1',
+                    'menv1', 'renv1', 'epoch1', 'spin1', 'mdot1', 'r1/rl1', 'kw2', 'mass2_initial', 'mass2', 'lg(L2)',
+                    'lg(r2)', 'lg(T2)', 'mc2', 'rc2', 'menv2', 'renv2', 'epoch2', 'spin2', 'mdot2', 'r2/rl2',
+                    'tb', 'sep', 'ecc', 'CE_channel', 'None']
 
-            # 改变轨道周期的单位(年 → 天)
-            output.bcm[jj, 30] = output.bcm[jj, 30] * yeardy
+    # 将二维数组转换为pandas数据
+    df = pd.DataFrame(result, columns=column_names)
 
-            # 寻找双星(致密星 + 非简并星)
-            if (kw >= 10 or kw2 >= 10) and (kw <= 6 or kw2 <= 6) and output.bcm[jj, 30] <= 1e5 and \
-                    0.0 <= output.bcm[jj, 32] < 1.0:
-                # 只记录一次(演化到致密星 + 非简并星时的初始状态)
-                if t1 < 0.0:
-                    t1 = output.bcm[jj, 1]
-                    kwx1 = kw
-                    kwx2 = kw2
-                    mx1 = output.bcm[jj, 4]
-                    mx2 = output.bcm[jj, 18]
-                    tbx = output.bcm[jj, 30]
-                    eccx = output.bcm[jj, 32]
+    # 挑选目标源
+    condition_NS_WD = select(df)[4]
+    if np.any(condition_NS_WD):
+        # 计算数量
+        rate = SFR_Galaxy() * Wb                            # 原初双星的诞生率(每百万年)
+        df['num'] = df['time'].diff().fillna(df['time'][0]) * rate      # 原初双星在每个步长内的诞生数量
 
-            # 寻找双致密星
-            if 10 <= kw <= 14 and 10 <= kw2 <= 14 and output.bcm[jj, 30] < 1e4 and 0.0 <= output.bcm[jj, 32] < 1.0:
-                # 记录多次(演化到黑洞 + 致密星后的每一步状态)
-                if t1 > 0.0:
-                    # 这里记录一下刚成为双致密星的时间, 用于比对Fortran的输出结果以验证程序的正确性
-                    if t2 < 0:
-                        t1 = output.bcm[jj, 1]
-                    t2 = output.bcm[jj, 1]
-                    # 由于很小概率下kw会小于kw2, 且有时双白矮星也会出现m1小于m2, 不方便后面统计数量，所以这里作一个调整
-                    if kw > kw2:
-                        mx11 = output.bcm[jj, 4]
-                        mx22 = output.bcm[jj, 18]
-                    elif kw == kw2:
-                        if output.bcm[jj, 4] >= output.bcm[jj, 18]:
-                            mx11 = output.bcm[jj, 4]
-                            mx22 = output.bcm[jj, 18]
-                        else:
-                            mx11 = output.bcm[jj, 18]
-                            mx22 = output.bcm[jj, 4]
-                    else:
-                        kw, kw2 = kw2, kw
-                        mx11 = output.bcm[jj, 18]
-                        mx22 = output.bcm[jj, 4]
-                    kwx11 = kw
-                    kwx22 = kw2
-                    tbx1 = output.bcm[jj, 30]
-                    eccx1 = output.bcm[jj, 32]
-                    dtt = output.bcm[jj, 1] - output.bcm[jj - 1, 1]
-                    # if 10000 - t2 + dtt > time_end:
-                    #     dtt = time_end + t2 - 14000
+        # 符合目标源条件的行标
+        df['NS_WD'] = np.where(condition_NS_WD, True, False)
 
-                    # 若 t2 = now(即此时看到双星), 则其对应的诞生时间(星系时间)为
-                    # Time = 14000 - t2
+        # 记录每次双星类型发生变化的行标
+        df['kw_change'] = (df['kw1'] != df['kw1'].shift().fillna(df['kw1'].iloc[-1])
+                           ) | (df['kw2'] != df['kw2'].shift().fillna(df['kw2'].iloc[-1]))
 
-                    # 计算诞生率(每百万年)和数量
-                    rate = SFR_Galaxy() * Wb      # 原初双星的诞生率
-                    num = rate * dtt            # 原初双星在dtt内的诞生数量
+        # 创建SNR和CE列
+        df['SNR'] = 0
+        df['CE'] = 0
 
-                    # 初步计算信噪比，在后面的数据处理中可根据情况需要重新计算
-                    (fgw, hc, SNR) = (1.0, 1.0, 1.0)
+        # 获取每次类型变化的行的索引位置
+        rows = df.index[df['kw_change']]
 
-                    # 保存致密双星的初始参数及典型演化轨迹
-                    CS_CS = np.array([m1, m2, tb, z, tphysf, mx1, mx2, tbx, eccx, mx11, mx22, tbx1, eccx1,
-                                      kwx1, kwx2, kw, kw2, fgw, hc, SNR, t1, t2, dtt, Wb, num]).reshape(1, 25)
+        # 检查在每次类型变换期间, 是否存在CE演化
+        for j in range(len(rows) - 1):
+            if 1 in df.loc[rows[j]:rows[j + 1] - 1, 'CE_channel'].values:
+                df.loc[rows[j + 1], 'CE'] = 1
 
-                    # 确保找到的目标双星可以在特定环境(金属丰度)中形成
-                    # if t2 > tphysf - time_interval:
-                    # 寻找双黑洞
-                    if kw == 14 and kw2 == 14:
-                        find.BH_BH = np.append(find.BH_BH, CS_CS, axis=0)
-                    # 寻找黑洞-中子星
-                    elif kw == 14 and kw2 == 13:
-                        find.BH_NS = np.append(find.BH_NS, CS_CS, axis=0)
-                    # 寻找黑洞-白矮星(未排除吸积致坍缩AIC黑洞)
-                    elif kw == 14 and 10 <= kw2 <= 12:
-                        find.BH_WD = np.append(find.BH_WD, CS_CS, axis=0)
-                    # 寻找双中子星
-                    elif kw == 13 and kw2 == 13:
-                        find.NS_NS = np.append(find.NS_NS, CS_CS, axis=0)
-                    # 寻找中子星-白矮星
-                    elif kw == 13 and 10 <= kw2 <= 12:
-                        find.NS_WD = np.append(find.NS_WD, CS_CS, axis=0)
-                    # 寻找双白矮星
-                    elif 10 <= kw <= 12 and 10 <= kw2 <= 12:
-                        find.WD_WD = np.append(find.WD_WD, CS_CS, axis=0)
+        # 筛选类型变化以及双致密星的记录
+        df = df[df['NS_WD'] | df['kw_change']]
 
-            # 寻找并合的黑洞-致密星双星系统
-            if kw == 15 or kw2 == 15:
-                if t2 > 0.0 and t3 < 0.0:
-                    t3 = output.bcm[jj, 1]
-                    Merger = np.array([m1, m2, tb, z, tphysf, mx1, mx2, tbx, eccx, mx11, mx22, tbx1, eccx1,
-                                       kwx1, kwx2, kwx11, kwx22, t1, t3, Wb]).reshape(1, 20)
-                    find.Merger = np.append(find.Merger, Merger, axis=0)
-                return
-    else:
-        return
+        # 选择需要输出的列
+        df = df[['index', 'time', 'mass1', 'mass2', 'tb', 'ecc', 'kw1', 'kw2', 'CE', 'SNR',
+                 'r1/rl1', 'r2/rl2', 'num']]
 
+        # 存储到文本中
+        float_list_NS_WD = ['time', 'mass1', 'mass2', 'r1/rl1', 'r2/rl2', 'SNR']
+        int_list_NS_WD = ['index', 'kw1', 'kw2', 'CE']
+        sci_list_NS_WD = ['tb', 'ecc', 'num']
 
-count = 0  # 计数用
-SN = 'rapid' if SNtype == 1 else ('delayed' if SNtype == 2 else 'stochastic')
-alpha_value = 'alpha_low' if alpha < 1 else ('alpha' if alpha == 1 else 'alpha_high')
-path = './data/' + SN + '/' + alpha_value + '/'
+        df[float_list_NS_WD] = df[float_list_NS_WD].round(3)
+        df[int_list_NS_WD] = df[int_list_NS_WD].astype(int)
+        df[sci_list_NS_WD] = df[sci_list_NS_WD].applymap('{:.3e}'.format)
+
+        if os.path.getsize(target_file) == 0:
+            df.to_csv(target_file, header=True, index=False)
+        else:
+            df.to_csv(target_file, header=False, index=False, mode='a')
 
 
 # @pysnooper.snoop()
-def popbin():
+def popbin(index):
     # 用于打印执行次数
-    global count
-    count = count + 1
-    if count == 2:
+    if index == 100:
         print("开始啦！")
-    if count % 10000 == 0.0:
-        print(count)
-        print(strftime("%Y-%m-%d %H:%M:%S", localtime()))
+    if index % (num_evolve // 100) == 0.0 and index > 0:
+        print(index)
+        print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+
+    # 初始化Zcnsts的实例
+    z = 0.02
+    zpars = np.zeros((1, 20)).flatten()
+    msp = np.zeros((1, 200)).flatten()
+    gbp = np.zeros((1, 200)).flatten()
+    zcnsts = Zcnsts(z, zpars, msp, gbp)
+
+    # 初始化Kick类的实例
+    f_fb = 0.0
+    meanvk = 0.0
+    sigmavk = 0.0
+    kick = Kick(f_fb, meanvk, sigmavk)
+
+    # 初始化Output类的实例
+    bcm = np.zeros((50001, 35))
+    bpp = np.zeros((81, 11))
+    output = Output(bcm, bpp)
 
     # 开始寻找目标源
-    Find(zcnsts, kick, output, find)
-
-    # 为了方便查看结果，这里先对输出格式做一些控制，例如9.3表示占九个字符且有三位有效数字，e表示科学计数法，f表示浮点数，d为整数
-    fmt_CS_CS = '%9.3f %9.3f %11.3f %9.4f %12.3f %9.3f %9.3f %12.3e %12.3e %9.3f %9.3f %12.3e %15.6e' \
-                '%5d %5d %4d %5d %12.3e %12.3e %9.3f %12.3f %12.3f %12.3e %12.3e %12.3e'
-    fmt_Merger = '%9.3f %9.3f %11.3f %9.4f %12.3f %9.3f %9.3f %11.3f %9.3f %9.3f %9.3f %12.3e %12.3e' \
-                 '%6d %5d %6d %5d %12.3f %12.3f %12.3e'
-    CS_CS = ['BH_BH', 'BH_NS', 'BH_WD', 'NS_NS', 'NS_WD', 'WD_WD']
-
-    # 如果找到，记录相关初始参数
-    for i in range(6):
-        if len(list(getattr(find, CS_CS[i]))) != 0:
-            with open(path + CS_CS[i] + ".txt", 'ab') as f:
-                np.savetxt(f, getattr(find, CS_CS[i]), fmt=fmt_CS_CS)
-
-    if len(list(find.Merger)) != 0:
-        with open(path + "Merger.txt", 'ab') as f:
-            np.savetxt(f, find.Merger[:, :], fmt=fmt_Merger)
-
-    # 初始化find实例(说明: 由于popbin函数未实用修饰器njit, 因此这里可以直接改变类的实例而无需作为popbin的变量)
-    find.BH_BH = np.empty(shape=(0, 25))
-    find.BH_NS = find.BH_BH.copy()
-    find.BH_WD = find.BH_BH.copy()
-    find.NS_NS = find.BH_BH.copy()
-    find.NS_WD = find.BH_BH.copy()
-    find.WD_WD = find.BH_BH.copy()
-    find.Merger = np.empty(shape=(0, 20))
-
-    # 初始化output实例
-    output.bcm = np.zeros((50001, 35))
-    output.bpp = np.zeros((81, 11))
-
-    # 初始化zcnsts实例
-    zcnsts.z = 0.0
-    zcnsts.zpars = np.zeros((1, 20)).flatten()
-    zcnsts.msp = np.zeros((1, 200)).flatten()
-    zcnsts.gbp = np.zeros((1, 200)).flatten()
-
-    # 初始化kick实例
-    kick.f_fb = 0.0
-    kick.meanvk = 0.0
-    kick.sigmavk = 0.0
+    Find(zcnsts, kick, output, index)
 
 
 def main():
-    # 首先清除之前的文本记录并写入标题
-    CS = ['BH_BH', 'BH_NS', 'BH_WD', 'NS_NS', 'NS_WD', 'WD_WD', 'Merger']
-    for i in range(7):
-        file = open(path + CS[i] + ".txt", 'w')
-        if i < 6:
-            file.write(
-                'm1 m2 tb z tphysf mx mx2 tbx eccx mx11 mx22 tbx1 eccx1 kwx1 kwx2 kw kw2 fgw hc SNR t1 t2 dtt Wb num \n')
-        else:
-            file.write('m1 m2 tb z tphysf mx mx2 tbx eccx mx11 mx22 tbx1 eccx1 kwx1 kwx2 kwx11 kwx22 t1 t3 Wb \n')
-        file.close()
+    # 首先清除之前的文本记录
+    open(target_file, 'w').close()
 
     # 并行计算演化大数量的双星系统
     with concurrent.futures.ProcessPoolExecutor(max_workers=20) as executor:
-        results = [executor.submit(popbin) for _ in range(int(num_evolve))]
+        results = [executor.submit(popbin, index) for index in range(num_evolve)]
 
 
 if __name__ == '__main__':
-    start = time()
+    start = time.time()
 
     main()
 
-    end = time()
+    end = time.time()
     print('运行时间: %s 秒' % (end - start))
 
 
