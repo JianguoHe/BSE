@@ -1,20 +1,30 @@
 import random
 import numpy as np
-import pandas as pd
 from numba import njit
-from const import mch, yeardy, period_to_sep, Msun, Rsun, yearsc
-from const import njit_enabled, IMF_scheme, mb_model, gamma_mb
-from const import m1_min, m1_max, m2_min, m2_max, sep_min, sep_max, num_evolve
+from numba.experimental import jitclass
+from const_new import mch, yeardy, period_to_sep, Msun, Rsun, yearsc
+from const_new import IMF_scheme, mb_model, gamma_mb
+from const_new import m1_min, m1_max, m2_min, m2_max, sep_min, sep_max, num_evolve
+from const_new import njit_enabled, jitclass_enabled
 
 
-# 定义一个条件装饰器
+# 定义一个njit条件装饰器
 def conditional_njit():
     def decorator(func):
         if njit_enabled:
             return njit(func)
         else:
             return func
+    return decorator
 
+
+# 定义一个jitclass条件装饰器
+def conditional_jitclass(spec):
+    def decorator(cls):
+        if jitclass_enabled:
+            return jitclass(spec)(cls)
+        else:
+            return cls
     return decorator
 
 
@@ -118,7 +128,7 @@ def cal_z(Fe_H):
 
 
 # 估算洛希瓣半径
-@njit
+@conditional_njit()
 def rochelobe(q):
     p = q ** (1 / 3)
     rl = 0.49 * p * p / (0.6 * p * p + np.log(1 + p))
