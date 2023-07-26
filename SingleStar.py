@@ -268,3 +268,11 @@ class SingleStar:
                 self.msp[3] + self.mass0 ** 3 + self.msp[4] * self.mass0 ** 5 + self.msp[5] * self.mass0 ** 7 +
                 self.msp[6] * self.mass0 ** 8 + self.msp[7] * self.mass0 ** 9 * mx)
         return lzams
+
+    # 估算零龄主序半径 Rzams
+    def rzamsf(self):
+        mx = np.sqrt(self.mass0)
+        rzams = ((self.msp[8] * self.mass0 ** 2 + self.msp[9] * self.mass0 ** 6) * mx + self.msp[10] * self.mass0 ** 11 + (
+                self.msp[11] + self.msp[12] * mx) * self.mass0 ** 19) / (self.msp[13] + self.msp[14] * self.mass0 ** 2 + (
+                self.msp[15] * self.mass0 ** 8 + self.mass0 ** 18 + self.msp[16] * self.mass0 ** 19) * mx)
+        return rzams
