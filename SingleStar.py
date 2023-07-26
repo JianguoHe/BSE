@@ -276,3 +276,4 @@ class SingleStar:
                 self.msp[11] + self.msp[12] * mx) * self.mass0 ** 19) / (self.msp[13] + self.msp[14] * self.mass0 ** 2 + (
                 self.msp[15] * self.mass0 ** 8 + self.mass0 ** 18 + self.msp[16] * self.mass0 ** 19) * mx)
         return rzams
+

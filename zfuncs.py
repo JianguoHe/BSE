@@ -8,7 +8,7 @@ import astropy.coordinates.sky_coordinate as skycoord
 # 集合了所有的独立函数（公式）
 
 
-# 估算零龄主序光度 Lzams （from Tout et al., 1996, MNRAS, 281, 257）
+# 估算零龄主序光度 Lzams （from Tout et al., 1996, MNRAS, 281, 257）【已转移】
 @conditional_njit()
 def lzamsf(m, x):
     mx = np.sqrt(m)
@@ -17,7 +17,7 @@ def lzamsf(m, x):
     return lzams
 
 
-# 估算零龄主序半径 Rzams
+# 估算零龄主序半径 Rzams【已转移】
 @conditional_njit()
 def rzamsf(m, x):
     mx = np.sqrt(m)
