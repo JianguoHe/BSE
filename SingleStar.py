@@ -2,11 +2,13 @@ from numba import float64, int64, types
 from numba.experimental import jitclass
 import numpy as np
 from const_new import gamma_mb, mb_model, yearsc, Zsun, neta, bwind, f_WR, f_LBV, Rsun, Teffsun
+from utils import conditional_jitclass
 from zcnst import zcnsts_set
 
 
 # Single star class
-@jitclass([
+
+spec = [
     ('type', float64),                      # steller type
     ('Z', float64),                         # initial mass fraction of metals
     ('mass0', float64),                     # initial mass (solar units)
@@ -41,7 +43,10 @@ from zcnst import zcnsts_set
     ('zpars', float64[:]),               # 存储每个步长的属性
     ('msp', float64[:]),                 # 存储每个步长的属性
     ('gbp', float64[:]),                 # 存储每个步长的属性
-])
+]
+
+
+@conditional_jitclass(spec)
 class SingleStar:
     def __init__(self, type, Z, mass, R=0, L=0, dt=1e6, Teff=0, spin=0, jspin=0, rochelobe=0,
                  mass_core=0, mass_he_core=0, mass_c_core=0, mass_o_core=0, mass_co_core=0, mass_envelop=0,

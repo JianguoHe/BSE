@@ -9,12 +9,17 @@ from numba.experimental import jitclass
 from numba import types
 from numba import float64, njit
 import time
-from utils import rochelobe, add
 from numba import float64
 
-jitclass_enabled = True
+jitclass_enabled = False
 
-
+def conditional_jitclass(spec):
+    def decorator(cls):
+        if jitclass_enabled:
+            return jitclass(spec)(cls)
+        else:
+            return cls
+    return decorator
 
 spec = [
     ('x', float64[:, :]),
@@ -31,28 +36,21 @@ class MyClass:
         for i in range(self.x.shape[0]):
             trace += np.tanh(self.x[i, i])
 
-    def slow(self):
-        trace = 0.0
-        for i in range(self.x.shape[0]):
-            trace += rochelobe(0.1)
-        add(self)
-
 
 x = np.random.rand(10000, 10000)
+my_class = MyClass(x=x)
 
 # 测试不加njit修饰器的compute_sum方法的运算速度
-my_class = MyClass(x=x)
 start = time.time()
-result = my_class.slow()
+result = my_class.go_fast()
 end = time.time()
 print("compute_sum elapsed time: ", end - start)
 
 start = time.time()
-result1 = my_class.slow()
+result1 = my_class.go_fast()
 end = time.time()
 print("compute_sum elapsed time: ", end - start)
 
-print(my_class.y)
 
 
 

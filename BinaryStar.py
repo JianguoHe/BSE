@@ -4,11 +4,14 @@ import numpy as np
 from const_new import alpha_wind, beta_wind
 from const_new import wind_model, acc1, yeardy, sep_to_period, period_to_sep, mu_wind
 from SingleStar import SingleStar
+from utils import conditional_jitclass
 from utils import rochelobe
 
 
 # Binary star class
-@jitclass([
+
+
+spec = [
     ('star1', SingleStar.class_type.instance_type),
     ('star2', SingleStar.class_type.instance_type),
     ('totalmass', float64),                     # total mass of binary
@@ -31,7 +34,9 @@ from utils import rochelobe
     ('edot_tide', float64),                     # 引力波辐射引起轨道角动量变化率
     ('state', types.string),                    # 双星状态['detached','semi-contacted','contacted','CE']
     ('event', types.optional(types.string))     # 发生的事件
-])
+]
+
+@conditional_jitclass(spec)
 class BinaryStar:
     def __init__(self, star1, star2, eccentricity=0, separation=0, period=0, dt=0,
                  jdot=0, jdot_wind=0, jdot_gr=0, jdot_mb=0, edot=0, edot_wind=0, edot_gr=0, edot_tide=0,
