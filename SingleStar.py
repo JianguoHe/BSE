@@ -277,3 +277,175 @@ class SingleStar:
                 self.msp[15] * self.mass0 ** 8 + self.mass0 ** 18 + self.msp[16] * self.mass0 ** 19) * mx)
         return rzams
 
+    # A function to evaluate the lifetime to the BGB or to Helium ignition if no FGB exists. (JH 24/11/97)
+    # [已校验] Hurley_2000: equation 5.1(4)
+    def tbgbf(self):
+        tbgb = (self.msp[17] + self.msp[18] * self.mass0 ** 4 + self.msp[19] * self.mass0 ** (11 / 2) + self.mass0 ** 7) / (
+                self.msp[20] * self.mass0 ** 2 + self.msp[21] * self.mass0 ** 7)
+        return tbgb
+
+    # A function to evaluate the derivitive of the lifetime to the BGB
+    # (or to Helium ignition if no FGB exists) wrt mass. (JH 24/11/97)
+    def tbgbdf(self):
+        mx = np.sqrt(self.mass0)
+        f = self.msp[17] + self.msp[18] * self.mass0 ** 4 + self.msp[19] * self.mass0 ** 5 * mx + self.mass0 ** 7
+        df = 4 * self.msp[18] * self.mass0 ** 3 + 5.5 * self.msp[19] * self.mass0 ** 4 * mx + 7 * self.mass0 ** 6
+        g = self.msp[20] * self.mass0 ** 2 + self.msp[21] * self.mass0 ** 7
+        dg = 2 * self.msp[20] * self.mass0 + 7 * self.msp[21] * self.mass0 ** 6
+        tbgbd = (df * g - f * dg) / (g * g)
+        return tbgbd
+
+    # A function to evaluate the derivitive of the lifetime to the BGB
+    # (or to Helium ignition if no FGB exists) wrt Z. (JH 14/12/98)
+    def tbgdzf(self):
+        mx = self.mass0 ** 5 * np.sqrt(self.mass0)
+        f = self.msp[17] + self.msp[18] * self.mass0 ** 4 + self.msp[19] * mx + self.mass0 ** 7
+        df = self.msp[117] + self.msp[118] * self.mass0 ** 4 + self.msp[119] * mx
+        g = self.msp[20] * self.mass0 ** 2 + self.msp[21] * self.mass0 ** 7
+        dg = self.msp[120] * self.mass0 ** 2
+        tbgdz = (df * g - f * dg) / (g * g)
+        return tbgdz
+
+    # A function to evaluate the lifetime to the end of the MS hook as a fraction of the lifetime to the BGB
+    # (for those models that have one). Note that this function is only valid for self.mass0 > Mhook.
+    # [已校验] Hurley_2000: equation 5.1(7)
+    def thook_div_tBGB(self):
+        term = 1 - 0.01 * max(self.msp[22] / self.mass0 ** self.msp[23], self.msp[24] + self.msp[25] / self.mass0 ** self.msp[26])
+        value = max(0.5, term)
+        return value
+
+    # 估算主序末尾的光度
+    # [已校验] Hurley_2000: equation 5.1(8)
+    def ltmsf(self):
+        ltms = (self.msp[27] * self.mass0 ** 3 + self.msp[28] * self.mass0 ** 4 + self.msp[29] * self.mass0 ** (self.msp[32] + 1.8)) / (
+                self.msp[30] + self.msp[31] * self.mass0 ** 5 + self.mass0 ** self.msp[32])
+        return ltms
+
+    # 估算光度 alpha 系数
+    # [已校验] Hurley_2000: equation 5.1.1(19)
+    def lalphaf(self):
+        mcut = 2.0
+        if self.mass0 < 0.5:
+            lalpha = self.msp[39]
+        elif self.mass0 < 0.7:
+            lalpha = self.msp[39] + ((0.3 - self.msp[39]) / 0.2) * (self.mass0 - 0.5)
+        elif self.mass0 < self.msp[37]:
+            lalpha = 0.3 + ((self.msp[40] - 0.3) / (self.msp[37] - 0.7)) * (self.mass0 - 0.7)
+        elif self.mass0 < self.msp[38]:
+            lalpha = self.msp[40] + ((self.msp[41] - self.msp[40]) / (self.msp[38] - self.msp[37])) * (self.mass0 - self.msp[37])
+        elif self.mass0 < mcut:
+            lalpha = self.msp[41] + ((self.msp[42] - self.msp[41]) / (mcut - self.msp[38])) * (self.mass0 - self.msp[38])
+        else:
+            lalpha = (self.msp[33] + self.msp[34] * self.mass0 ** self.msp[36]) / (self.mass0 ** 0.4 + self.msp[35] * self.mass0 ** 1.9)
+        return lalpha
+
+    # 估算光度 beta 系数
+    # [已校验] Hurley_2000: equation 5.1.1(20)
+    def lbetaf(self):
+        lbeta = max(0, self.msp[43] - self.msp[44] * self.mass0 ** self.msp[45])
+        if self.mass0 > self.msp[46] and lbeta > 0:
+            B = self.msp[43] - self.msp[44] * self.msp[46] ** self.msp[45]
+            lbeta = max(0, B - 10 * B * (self.mass0 - self.msp[46]))
+        return lbeta
+
+    # 估算光度 neta 系数
+    # [已校验] Hurley_2000: equation 5.1.1(18)
+    def lnetaf(self):
+        if self.mass0 <= 1:
+            lneta = 10
+        elif self.mass0 >= 1.1:
+            lneta = 20
+        else:
+            lneta = 10 + 100 * (self.mass0 - 1)
+        lneta = min(lneta, self.msp[97])
+        return lneta
+
+    # A function to evaluate the radius at the end of the MS
+    # Note that a safety check is added to ensure Rtms > Rzams when extrapolating the function to low masses. (JH 24/11/97)
+    # [已校验] Hurley_2000: equation 5.1(9)
+    def rtmsf(self):
+        if self.mass0 <= self.msp[62]:
+            rtms = (self.msp[52] + self.msp[53] * self.mass0 ** self.msp[55]) / (self.msp[54] + self.mass0 ** self.msp[56])
+            # extrapolated to low mass(M < 0.5)
+            rtms = max(rtms, 1.5 * self.rzamsf())
+        elif self.mass0 >= self.msp[62] + 0.1:
+            rtms = (self.msp[57] * self.mass0 ** 3 + self.msp[58] * self.mass0 ** self.msp[61] + self.msp[59] * self.mass0 ** (self.msp[61] + 1.5)) / (
+                    self.msp[60] + self.mass0 ** 5)
+        else:
+            rtms = self.msp[63] + ((self.mass0 - self.msp[62]) / 0.1) * (self.msp[64] - self.msp[63])
+        return rtms
+
+    # 估算半径 alpha 系数
+    # [已校验] Hurley_2000: equation 5.1.1(21)
+    def ralphaf(self):
+        if self.mass0 <= 0.5:
+            ralpha = self.msp[73]
+        elif self.mass0 <= 0.65:
+            ralpha = self.msp[73] + ((self.msp[74] - self.msp[73]) / 0.15) * (self.mass0 - 0.5)
+        elif self.mass0 <= self.msp[70]:
+            ralpha = self.msp[74] + ((self.msp[75] - self.msp[74]) / (self.msp[70] - 0.65)) * (self.mass0 - 0.65)
+        elif self.mass0 <= self.msp[71]:
+            ralpha = self.msp[75] + ((self.msp[76] - self.msp[75]) / (self.msp[71] - self.msp[70])) * (self.mass0 - self.msp[70])
+        elif self.mass0 <= self.msp[72]:
+            ralpha = (self.msp[65] * self.mass0 ** self.msp[67]) / (self.msp[66] + self.mass0 ** self.msp[68])
+        else:
+            a5 = (self.msp[65] * self.msp[72] ** self.msp[67]) / (self.msp[66] + self.msp[72] ** self.msp[68])
+            ralpha = a5 + self.msp[69] * (self.mass0 - self.msp[72])
+        return ralpha
+
+    # 估算半径 beta 系数
+    # [已校验] Hurley_2000: equation 5.1.1(22)
+    def rbetaf(self):
+        m2 = 2
+        m3 = 16
+        if self.mass0 <= 1:
+            rbeta = 1.06
+        elif self.mass0 <= self.msp[82]:
+            rbeta = 1.06 + ((self.msp[81] - 1.06) / (self.msp[82] - 1)) * (self.mass0 - 1)
+        elif self.mass0 <= m2:
+            b2 = (self.msp[77] * m2 ** (7 / 2)) / (self.msp[78] + m2 ** self.msp[79])
+            rbeta = self.msp[81] + ((b2 - self.msp[81]) / (m2 - self.msp[82])) * (self.mass0 - self.msp[82])
+        elif self.mass0 <= m3:
+            rbeta = (self.msp[77] * self.mass0 ** (7 / 2)) / (self.msp[78] + self.mass0 ** self.msp[79])
+        else:
+            b3 = (self.msp[77] * m3 ** (7 / 2)) / (self.msp[78] + m3 ** self.msp[79])
+            rbeta = b3 + self.msp[80] * (self.mass0 - m3)
+        rbeta = rbeta - 1
+        return rbeta
+
+    # 估算半径 gamma 系数
+    # [已校验] Hurley_2000: equation 5.1.1(23)
+    def rgammaf(self):
+        m1 = 1
+        b1 = max(0, self.msp[83] + self.msp[84] * (m1 - self.msp[85]) ** self.msp[86])
+        if self.mass0 <= m1:
+            rgamma = self.msp[83] + self.msp[84] * abs(self.mass0 - self.msp[85]) ** self.msp[86]
+        elif m1 < self.mass0 <= self.msp[88]:
+            rgamma = b1 + (self.msp[89] - b1) * ((self.mass0 - m1) / (self.msp[88] - m1)) ** self.msp[87]
+        elif self.msp[88] < self.mass0 <= self.msp[88] + 0.1:
+            if self.msp[88] > m1:
+                b1 = self.msp[89]
+            rgamma = b1 - 10 * b1 * (self.mass0 - self.msp[88])
+        else:
+            rgamma = 0
+        rgamma = max(rgamma, 0)
+        return rgamma
+
+    # A function to evaluate the luminosity at the base of Giant Branch (for those models that have one)
+    # Note that this function is only valid for LM & IM stars
+    # [已校验] Hurley_2000: equation 5.1(10)
+    def lbgbf(self):
+        lbgb = (self.gbp[1] * self.mass0 ** self.gbp[5] + self.gbp[2] * self.mass0 ** self.gbp[8]) / (
+                    self.gbp[3] + self.gbp[4] * self.mass0 ** self.gbp[7] + self.mass0 ** self.gbp[6])
+        return lbgb
+
+    # A function to evaluate the derivitive of the Lbgb function.
+    # Note that this function is only valid for LM & IM stars
+    def lbgbdf(self):
+        f = self.gbp[1] * self.mass0 ** self.gbp[5] + self.gbp[2] * self.mass0 ** self.gbp[8]
+        df = self.gbp[5] * self.gbp[1] * self.mass0 ** (self.gbp[5] - 1) + self.gbp[8] * self.gbp[2] * self.mass0 ** (self.gbp[8] - 1)
+        g = self.gbp[3] + self.gbp[4] * self.mass0 ** self.gbp[7] + self.mass0 ** self.gbp[6]
+        dg = self.gbp[7] * self.gbp[4] * self.mass0 ** (self.gbp[7] - 1) + self.gbp[6] * self.mass0 ** (self.gbp[6] - 1)
+        lbgbd = (df * g - f * dg) / (g * g)
+        return lbgbd
+

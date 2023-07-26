@@ -6,6 +6,7 @@ from const_new import wind_model, acc1, yeardy, sep_to_period, period_to_sep, mu
 from SingleStar import SingleStar
 from utils import conditional_jitclass
 from utils import rochelobe
+from star import star
 
 
 # Binary star class
@@ -153,6 +154,9 @@ class BinaryStar:
 
     # 演化双星
     def evolve(self):
+        # 确定两颗恒星的不同演化阶段的时标、标志性光度、巨星分支参数
+        star(self.star1)
+        star(self.star2)
 
         # 考虑星风的影响（质量/自旋角动量/轨道角动量的减少/增加）
         # self.steller_wind()

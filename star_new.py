@@ -34,8 +34,8 @@ import numpy as np
 
 
 @conditional_njit()
-def star(kw, mass, mt, zcnsts):
-    # 输入 kw, mass, mt, zcnsts
+def star(kw, mass0, mt, zcnsts):
+    # 输入 kw, mass0, mt, zcnsts
 
     # 输出参数
     tm = 0                                 # 主序时间
@@ -44,8 +44,8 @@ def star(kw, mass, mt, zcnsts):
     lums = np.zeros((1, 11)).flatten()     # 特征光度
     GB = np.zeros((1, 11)).flatten()       # 巨星分支参数
 
-    if mass > 100:
-        raise ValueError('mass exceeded')
+    # 限定拟合公式的质量在 100Msun 以下
+    mass = min(mass0, 100)
 
     if 7 <= kw <= 9:
         # 估算 He 星的主序时间

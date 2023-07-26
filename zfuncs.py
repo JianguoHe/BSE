@@ -8,124 +8,6 @@ import astropy.coordinates.sky_coordinate as skycoord
 # 集合了所有的独立函数（公式）
 
 
-# 估算零龄主序光度 Lzams （from Tout et al., 1996, MNRAS, 281, 257）【已转移】
-@conditional_njit()
-def lzamsf(m, x):
-    mx = np.sqrt(m)
-    lzams = (x.msp[1] * m ** 5 * mx + x.msp[2] * m ** 11) / (
-                x.msp[3] + m ** 3 + x.msp[4] * m ** 5 + x.msp[5] * m ** 7 + x.msp[6] * m ** 8 + x.msp[7] * m ** 9 * mx)
-    return lzams
-
-
-# 估算零龄主序半径 Rzams【已转移】
-@conditional_njit()
-def rzamsf(m, x):
-    mx = np.sqrt(m)
-    rzams = ((x.msp[8] * m ** 2 + x.msp[9] * m ** 6) * mx + x.msp[10] * m ** 11 + (
-            x.msp[11] + x.msp[12] * mx) * m ** 19) / (x.msp[13] + x.msp[14] * m ** 2 + (
-            x.msp[15] * m ** 8 + m ** 18 + x.msp[16] * m ** 19) * mx)
-    return rzams
-
-
-# A function to evaluate the lifetime to the BGB or to Helium ignition if no FGB exists. (JH 24/11/97)
-# [已校验] Hurley_2000: equation 5.1(4)
-@conditional_njit()
-def tbgbf(m, x):
-    tbgb = (x.msp[17] + x.msp[18] * m ** 4 + x.msp[19] * m ** (11 / 2) + m ** 7) / (
-            x.msp[20] * m ** 2 + x.msp[21] * m ** 7)
-    return tbgb
-
-
-# A function to evaluate the derivitive of the lifetime to the BGB
-# (or to Helium ignition if no FGB exists) wrt mass. (JH 24/11/97)
-@conditional_njit()
-def tbgbdf(m, x):
-    mx = np.sqrt(m)
-    f = x.msp[17] + x.msp[18] * m ** 4 + x.msp[19] * m ** 5 * mx + m ** 7
-    df = 4 * x.msp[18] * m ** 3 + 5.5 * x.msp[19] * m ** 4 * mx + 7 * m ** 6
-    g = x.msp[20] * m ** 2 + x.msp[21] * m ** 7
-    dg = 2 * x.msp[20] * m + 7 * x.msp[21] * m ** 6
-    tbgbd = (df * g - f * dg) / (g * g)
-    return tbgbd
-
-
-# A function to evaluate the derivitive of the lifetime to the BGB
-# (or to Helium ignition if no FGB exists) wrt Z. (JH 14/12/98)
-@conditional_njit()
-def tbgdzf(m, x):
-    mx = m ** 5 * np.sqrt(m)
-    f = x.msp[17] + x.msp[18] * m ** 4 + x.msp[19] * mx + m ** 7
-    df = x.msp[117] + x.msp[118] * m ** 4 + x.msp[119] * mx
-    g = x.msp[20] * m ** 2 + x.msp[21] * m ** 7
-    dg = x.msp[120] * m ** 2
-    tbgdz = (df * g - f * dg) / (g * g)
-    return tbgdz
-
-
-# A function to evaluate the lifetime to the end of the MS hook as a fraction of the lifetime to the BGB
-# (for those models that have one). Note that this function is only valid for M > Mhook.
-# [已校验] Hurley_2000: equation 5.1(7)
-@conditional_njit()
-def thook_div_tBGB(m, x):
-    term = 1 - 0.01 * max(x.msp[22] / m ** x.msp[23], x.msp[24] + x.msp[25] / m ** x.msp[26])
-    value = max(0.5, term)
-    return value
-
-
-# 估算主序末尾的光度
-# [已校验] Hurley_2000: equation 5.1(8)
-@conditional_njit()
-def ltmsf(m, x):
-    ltms = (x.msp[27] * m ** 3 + x.msp[28] * m ** 4 + x.msp[29] * m ** (x.msp[32] + 1.8)) / (
-            x.msp[30] + x.msp[31] * m ** 5 + m ** x.msp[32])
-    return ltms
-
-
-# 估算光度 alpha 系数
-# [已校验] Hurley_2000: equation 5.1.1(19)
-@conditional_njit()
-def lalphaf(m, x):
-    mcut = 2.0
-    if m < 0.5:
-        lalpha = x.msp[39]
-    elif m < 0.7:
-        lalpha = x.msp[39] + ((0.3 - x.msp[39]) / 0.2) * (m - 0.5)
-    elif m < x.msp[37]:
-        lalpha = 0.3 + ((x.msp[40] - 0.3) / (x.msp[37] - 0.7)) * (m - 0.7)
-    elif m < x.msp[38]:
-        lalpha = x.msp[40] + ((x.msp[41] - x.msp[40]) / (x.msp[38] - x.msp[37])) * (m - x.msp[37])
-    elif m < mcut:
-        lalpha = x.msp[41] + ((x.msp[42] - x.msp[41]) / (mcut - x.msp[38])) * (m - x.msp[38])
-    else:
-        lalpha = (x.msp[33] + x.msp[34] * m ** x.msp[36]) / (m ** 0.4 + x.msp[35] * m ** 1.9)
-    return lalpha
-
-
-# 估算光度 beta 系数
-# [已校验] Hurley_2000: equation 5.1.1(20)
-@conditional_njit()
-def lbetaf(m, x):
-    lbeta = max(0, x.msp[43] - x.msp[44] * m ** x.msp[45])
-    if m > x.msp[46] and lbeta > 0:
-        B = x.msp[43] - x.msp[44] * x.msp[46] ** x.msp[45]
-        lbeta = max(0, B - 10 * B * (m - x.msp[46]))
-    return lbeta
-
-
-# 估算光度 neta 系数
-# [已校验] Hurley_2000: equation 5.1.1(18)
-@conditional_njit()
-def lnetaf(m, x):
-    if m <= 1:
-        lneta = 10
-    elif m >= 1.1:
-        lneta = 20
-    else:
-        lneta = 10 + 100 * (m - 1)
-    lneta = min(lneta, x.msp[97])
-    return lneta
-
-
 # A function to evalute the luminosity pertubation on the MS phase for M > Mhook. (JH 24/11/97)【我对这个函数的定义有改动】
 # [已校验] Hurley_2000: equation 5.1.1(16)
 @conditional_njit()
@@ -138,85 +20,6 @@ def lpertf(m, mhook, x):
         B = min(x.msp[47] / x.msp[51] ** x.msp[48], x.msp[49] / x.msp[51] ** x.msp[50])
         lhook = B * ((m - mhook) / (x.msp[51] - mhook)) ** 0.4
     return lhook
-
-
-# A function to evaluate the radius at the end of the MS
-# Note that a safety check is added to ensure Rtms > Rzams when extrapolating the function to low masses. (JH 24/11/97)
-# [已校验] Hurley_2000: equation 5.1(9)
-@conditional_njit()
-def rtmsf(m, x):
-    if m <= x.msp[62]:
-        rtms = (x.msp[52] + x.msp[53] * m ** x.msp[55]) / (x.msp[54] + m ** x.msp[56])
-        # extrapolated to low mass(M < 0.5)
-        rtms = max(rtms, 1.5 * rzamsf(m, x))
-    elif m >= x.msp[62] + 0.1:
-        rtms = (x.msp[57] * m ** 3 + x.msp[58] * m ** x.msp[61] + x.msp[59] * m ** (x.msp[61] + 1.5)) / (
-                    x.msp[60] + m ** 5)
-    else:
-        rtms = x.msp[63] + ((m - x.msp[62]) / 0.1) * (x.msp[64] - x.msp[63])
-    return rtms
-
-
-# 估算半径 alpha 系数
-# [已校验] Hurley_2000: equation 5.1.1(21)
-@conditional_njit()
-def ralphaf(m,x):
-    if m <= 0.5:
-        ralpha = x.msp[73]
-    elif m <= 0.65:
-        ralpha = x.msp[73] + ((x.msp[74] - x.msp[73]) / 0.15) * (m - 0.5)
-    elif m <= x.msp[70]:
-        ralpha = x.msp[74] + ((x.msp[75]-x.msp[74])/(x.msp[70]-0.65))*(m - 0.65)
-    elif m <= x.msp[71]:
-        ralpha = x.msp[75] + ((x.msp[76] - x.msp[75])/(x.msp[71] - x.msp[70]))*(m - x.msp[70])
-    elif m <= x.msp[72]:
-        ralpha = (x.msp[65]*m**x.msp[67])/(x.msp[66] + m**x.msp[68])
-    else:
-        a5 = (x.msp[65] * x.msp[72] ** x.msp[67]) / (x.msp[66] + x.msp[72] ** x.msp[68])
-        ralpha = a5 + x.msp[69] * (m - x.msp[72])
-    return ralpha
-
-
-# 估算半径 beta 系数
-# [已校验] Hurley_2000: equation 5.1.1(22)
-@conditional_njit()
-def rbetaf(m,x):
-    m2 = 2
-    m3 = 16
-    if m <= 1:
-        rbeta = 1.06
-    elif m <= x.msp[82]:
-        rbeta = 1.06 + ((x.msp[81] - 1.06) / (x.msp[82] - 1)) * (m - 1)
-    elif m <= m2:
-        b2 = (x.msp[77] * m2 ** (7 / 2)) / (x.msp[78] + m2 ** x.msp[79])
-        rbeta = x.msp[81] + ((b2 - x.msp[81]) / (m2 - x.msp[82])) * (m - x.msp[82])
-    elif m <= m3:
-        rbeta = (x.msp[77] * m ** (7 / 2)) / (x.msp[78] + m ** x.msp[79])
-    else:
-        b3 = (x.msp[77] * m3 ** (7 / 2)) / (x.msp[78] + m3 ** x.msp[79])
-        rbeta = b3 + x.msp[80] * (m - m3)
-    rbeta = rbeta - 1
-    return rbeta
-
-
-# 估算半径 gamma 系数
-# [已校验] Hurley_2000: equation 5.1.1(23)
-@conditional_njit()
-def rgammaf(m, x):
-    m1 = 1
-    b1 = max(0, x.msp[83] + x.msp[84] * (m1 - x.msp[85]) ** x.msp[86])
-    if m <= m1:
-        rgamma = x.msp[83] + x.msp[84] * abs(m - x.msp[85]) ** x.msp[86]
-    elif m1 < m <= x.msp[88]:
-        rgamma = b1 + (x.msp[89] - b1) * ((m - m1) / (x.msp[88] - m1)) ** x.msp[87]
-    elif x.msp[88] < m <= x.msp[88] + 0.1:
-        if x.msp[88] > m1:
-            b1 = x.msp[89]
-        rgamma = b1 - 10 * b1 * (m - x.msp[88])
-    else:
-        rgamma = 0
-    rgamma = max(rgamma, 0)
-    return rgamma
 
 
 # A function to evalute the radius pertubation on the MS phase for M > Mhook. (JH 24/11/97)【我对这个函数的定义有改动】
@@ -235,28 +38,6 @@ def rpertf(m, mhook, x):
         rhook = (x.msp[90] + x.msp[91] * m ** (7 / 2)) / (x.msp[92] * m ** 3 + m ** x.msp[93]) - 1
     return rhook
 
-
-# A function to evaluate the luminosity at the base of Giant Branch (for those models that have one)
-# Note that this function is only valid for LM & IM stars
-# [已校验] Hurley_2000: equation 5.1(10)
-@conditional_njit()
-def lbgbf(m, x):
-    lbgb = (x.gbp[1] * m ** x.gbp[5] + x.gbp[2] * m ** x.gbp[8]) / (x.gbp[3] + x.gbp[4]*m**x.gbp[7] + m**x.gbp[6])
-    return lbgb
-
-
-# A function to evaluate the derivitive of the Lbgb function.
-# Note that this function is only valid for LM & IM stars
-@conditional_njit()
-def lbgbdf(m, x):
-    f = x.gbp[1] * m ** x.gbp[5] + x.gbp[2] * m ** x.gbp[8]
-    df = x.gbp[5] * x.gbp[1] * m ** (x.gbp[5] - 1) + x.gbp[8] * x.gbp[2] * m ** (x.gbp[8] - 1)
-    g = x.gbp[3] + x.gbp[4] * m ** x.gbp[7] + m ** x.gbp[6]
-    dg = x.gbp[7] * x.gbp[4] * m ** (x.gbp[7] - 1) + x.gbp[6] * m ** (x.gbp[6] - 1)
-    lbgbd = (df * g - f * dg) / (g * g)
-    return lbgbd
-
-
 # A function to evaluate the BAGB luminosity. (OP 21/04/98)
 # Continuity between LM and IM functions is ensured by setting gbp(16) = lbagbf(mhefl,0.0) with gbp(16) = 1.0.
 # [已校验] Hurley_2000: equation 5.3(56) 第三行有出入
@@ -273,7 +54,7 @@ def lbagbf(m, mhefl, x):
 # 估算巨星分支上的半径
 # [已校验] Hurley_2000: equation 5.2(46)
 @conditional_njit()
-def rgbf(m, lum, x):
+def rgbf(self, lum):
     a = min(x.gbp[20] / m ** x.gbp[21], x.gbp[22] / m ** x.gbp[23])
     rgb = a * (lum ** x.gbp[18] + x.gbp[17] * lum ** x.gbp[19])
     return rgb
