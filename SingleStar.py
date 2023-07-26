@@ -40,9 +40,14 @@ spec = [
     ('max_step', float64),                  # 最大演化步长
     ('step', int64),                        # 当前的演化步长
     ('data', float64[:, :]),                # 存储每个步长的属性
-    ('zpars', float64[:]),               # 存储每个步长的属性
-    ('msp', float64[:]),                 # 存储每个步长的属性
-    ('gbp', float64[:]),                 # 存储每个步长的属性
+    ('zpars', float64[:]),                  # 与金属丰度相关的常数
+    ('msp', float64[:]),                    # 主序分支系数
+    ('gbp', float64[:]),                    # 巨星分支系数
+    ('tm', float64),                        # 主序时间
+    ('tn', float64),                        # 核燃烧时间
+    ('tscls', float64[:]),                  # 到达不同阶段的时标
+    ('lums', float64[:]),                   # 特征光度
+    ('GB', float64[:]),                     # 巨星分支参数
 ]
 
 
@@ -87,6 +92,11 @@ class SingleStar:
         self.zpars = np.zeros(20)
         self.msp = np.zeros(200)
         self.gbp = np.zeros(200)
+        self.tm = 0
+        self.tn = 0
+        self.tscls = np.zeros(20)
+        self.lums = np.zeros(10)
+        self.GB = np.zeros(10)
 
     # 计算金属丰度相关常数
     def _set_jorb(self):
