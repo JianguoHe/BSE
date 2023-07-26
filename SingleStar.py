@@ -261,10 +261,10 @@ class SingleStar:
             mdot_LBV_Belczynski = 0
         return mdot_LBV_Belczynski
 
-    # def evolve(self, force):
-    #     # update velocity and position based on force
-    #     self.velocity += force / self.mass * self.dt
-    #     self.position += self.velocity * self.dt
-    #
-    #     # update time
-    #     self.time += self.dt
+    # 估算零龄主序光度 Lzams （from Tout et al., 1996, MNRAS, 281, 257）
+    def lzamsf(self):
+        mx = np.sqrt(self.mass0)
+        lzams = (self.msp[1] * self.mass0 ** 5 * mx + self.msp[2] * self.mass0 ** 11) / (
+                self.msp[3] + self.mass0 ** 3 + self.msp[4] * self.mass0 ** 5 + self.msp[5] * self.mass0 ** 7 +
+                self.msp[6] * self.mass0 ** 8 + self.msp[7] * self.mass0 ** 9 * mx)
+        return lzams

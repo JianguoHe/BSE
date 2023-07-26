@@ -9,8 +9,6 @@ from utils import rochelobe
 
 
 # Binary star class
-
-
 spec = [
     ('star1', SingleStar.class_type.instance_type),
     ('star2', SingleStar.class_type.instance_type),
@@ -35,6 +33,7 @@ spec = [
     ('state', types.string),                    # 双星状态['detached','semi-contacted','contacted','CE']
     ('event', types.optional(types.string))     # 发生的事件
 ]
+
 
 @conditional_jitclass(spec)
 class BinaryStar:
