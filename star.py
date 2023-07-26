@@ -268,8 +268,3 @@ def star(kw, mass, mt, zcnsts):
                     tn = tscls[2] + tscls[3] * ((mt - mc2) / (mcbagb - mc2))
     tn = min(tn, tscls[14])
     return tm, tn, tscls, lums, GB    # 结束此函数
-
-
-
-
-

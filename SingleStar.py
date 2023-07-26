@@ -543,3 +543,58 @@ class SingleStar:
         else:
             lum = GB[3] * (mc ** GB[6])
         return lum
+
+    # A function to evaluate the He-burning lifetime.
+    # For IM & HM stars, tHef is relative to tBGB.
+    # Continuity between LM and IM stars is ensured by setting thefl = tHef(mhefl,0.0,0.0)
+    # the call to themsf ensures continuity between HB and NHe stars as Menv -> 0.
+    # [已校验] Hurley_2000: equation 5.3(57)
+    def tHef(self, m, mc, mhefl):
+        if m <= mhefl:
+            mm = max((mhefl - m) / (mhefl - mc), 1e-12)
+            tHe = (self.gbp[54] + (self.themsf(mc) - self.gbp[54]) * mm ** self.gbp[55]) * (
+                        1 + self.gbp[57] * np.exp(m * self.gbp[56]))
+        else:
+            tHe = (self.gbp[58] * m ** self.gbp[61] + self.gbp[59] * m ** 5) / (self.gbp[60] + m ** 5)
+        return tHe
+
+    # 估算 He 星的主序时间
+    # [已校验] Hurley_2000: equation 6.1(79)
+    def themsf(self, m=0):
+        if m == 0:
+            thems = (0.4129 + 18.81 * self.mass0 ** 4 + 1.853 * self.mass0 ** 6) / self.mass0 ** 6.5
+        else:
+            thems = (0.4129 + 18.81 * m ** 4 + 1.853 * m ** 6) / m ** 6.5
+        return thems
+
+    # 通过光度估算 GB, AGB and NHe stars 的 Mc
+    # [已校验] Hurley_2000: equation 5.2(37)等效
+    def lum_to_mc_gb(self, lum):
+        if lum <= self.lums[6]:
+            mc = (lum / self.GB[4]) ** (1 / self.GB[5])
+        else:
+            mc = (lum / self.GB[3]) ** (1 / self.GB[6])
+        return mc
+
+    # A function to evaluate core mass at the BAGB  (OP 25/11/97)
+    # [已校验] Hurley_2000: equation 5.3(66)
+    def mcagbf(self, m):
+        mcagb = (self.gbp[37] + self.gbp[35] * m ** self.gbp[36]) ** (1 / 4)
+        return mcagb
+
+    # A function to evaluate core mass at BGB or He ignition (depending on mchefl) for IM & HM stars
+    # [已校验] Hurley_2000: equation 5.2(44)
+    def mcheif(self, m, mhefl, mchefl):
+        mcbagb = self.mcagbf(m)
+        a3 = mchefl ** 4 - self.gbp[33] * mhefl ** self.gbp[34]
+        mchei = min(0.95 * mcbagb, (a3 + self.gbp[33] * m ** self.gbp[34]) ** (1 / 4))
+        return mchei
+
+    # A function to evaluate Mc given t for GB, AGB and NHe stars
+    # [已校验] Hurley_2000: equation 5.2(34、39)
+    def mcgbtf(self, t, A, tinf1, tinf2, tx):
+        if t <= tx:
+            mcgbt = ((self.GB[5] - 1) * A * self.GB[4] * (tinf1 - t)) ** (1 / (1 - self.GB[5]))
+        else:
+            mcgbt = ((self.GB[6] - 1) * A * self.GB[3] * (tinf2 - t)) ** (1 / (1 - self.GB[6]))
+        return mcgbt
