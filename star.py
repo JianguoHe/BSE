@@ -32,7 +32,6 @@ import numpy as np
 #
 #       ------------------------------------------------------------
 
-
 @conditional_njit()
 def star(kw, mass, mt, zcnsts):
     # 输入 kw, mass, mt, zcnsts

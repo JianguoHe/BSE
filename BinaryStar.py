@@ -32,7 +32,12 @@ spec = [
     ('edot_gr', float64),                       # 引力波辐射引起轨道角动量变化率
     ('edot_tide', float64),                     # 引力波辐射引起轨道角动量变化率
     ('state', types.string),                    # 双星状态['detached','semi-contacted','contacted','CE']
-    ('event', types.optional(types.string))     # 发生的事件
+    ('event', types.optional(types.string)),    # 发生的事件
+    ('max_time', float64),                      # 最长演化时间        [unit: Myr]
+    ('time', float64),                          # 当前的演化时间        [unit: Myr]
+    ('max_step', float64),                      # 最大演化步长
+    ('step', int64),                            # 当前的演化步长
+    ('data', float64[:, :]),                    # 存储每个步长的属性
 ]
 
 
@@ -40,7 +45,7 @@ spec = [
 class BinaryStar:
     def __init__(self, star1, star2, eccentricity=0, separation=0, period=0, dt=0,
                  jdot=0, jdot_wind=0, jdot_gr=0, jdot_mb=0, edot=0, edot_wind=0, edot_gr=0, edot_tide=0,
-                 state='detached', event=None):
+                 state='detached', event=None, max_time=10000, time=0, max_step=20000, step=0):
         self.star1 = star1
         self.star2 = star2
         self.totalmass = star1.mass + star2.mass
@@ -63,7 +68,31 @@ class BinaryStar:
         self.state = state
         self.event = event
         self.cal_radius_rochelobe()
+        self.max_time = max_time
+        self.time = time
+        self.max_step = max_step
+        self.step = step
+        self.data = np.zeros((max_step, 30))
 
+    # ------------------------------------------------------------------------------------------------------------------
+    #                                                    保存当前属性
+    # ------------------------------------------------------------------------------------------------------------------
+    def save(self):
+        self.data[self.step, 0] = self.time
+        self.data[self.step, 1] = self.ecc
+        self.data[self.step, 2] = self.period
+        self.data[self.step, 3] = self.sep
+        self.data[self.step, 4] = self.star1.R / self.star1.rochelobe
+        self.data[self.step, 5] = self.star2.R / self.star2.rochelobe
+        self.data[self.step, 6] = self.jdot
+        self.data[self.step, 7] = self.jdot_wind
+        self.data[self.step, 8] = self.jdot_gr
+        self.data[self.step, 9] = self.jdot_mb
+        self.data[self.step, 10] = self.edot
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #                                                    轨道参数
+    # ------------------------------------------------------------------------------------------------------------------
     # 计算轨道参数 (unit: year)
     def _set_orbital_parameter(self, separation, period):
         if separation > 0:
@@ -93,7 +122,9 @@ class BinaryStar:
         self.star1.rochelobe = self.sep * rochelobe(self.q1)
         self.star2.rochelobe = self.sep * rochelobe(self.q2)
 
-    # 考虑星风的影响(自旋角动量/轨道角动量/偏心率)
+    # ------------------------------------------------------------------------------------------------------------------
+    #                                       考虑星风的影响(自旋角动量/轨道角动量/偏心率)
+    # ------------------------------------------------------------------------------------------------------------------
     def steller_wind(self):
         # 星风质量损失率、吸积率
         self.mdot_wind()
@@ -134,7 +165,9 @@ class BinaryStar:
             star2.mdot_wind_accrete = term1 * term2 * term3 * term4
             star2.mdot_wind_accrete = min(star2.mdot_wind_accrete, 0.8 * abs(star1.mdot_wind_loss))
 
-    # 密近双星的引力波辐射导致轨道角动量损失
+    # ------------------------------------------------------------------------------------------------------------------
+    #                                       密近双星的引力波辐射导致轨道角动量损失
+    # ------------------------------------------------------------------------------------------------------------------
     def GW_radiation(self):
         if self.sep <= 1000:
             ecc4 = np.sqrt(1.0 - self.ecc ** 2)
