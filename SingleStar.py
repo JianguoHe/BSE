@@ -5,48 +5,49 @@ from const_new import gamma_mb, mb_model, yearsc, Zsun, neta, bwind, f_WR, f_LBV
 from utils import conditional_jitclass
 from zcnst import zcnsts_set
 
+
 # Single star class
 
 spec = [
-    ('type', float64),  # steller type
-    ('Z', float64),  # initial mass fraction of metals
-    ('mass0', float64),  # initial mass (solar units)
-    ('mass', float64),  # current mass (solar units)
-    ('R', float64),  # radius (solar units)
-    ('L', float64),  # luminosity (solar units)
-    ('dt', float64),  # evolution timestep
-    ('Teff', float64),  # effective temperature (K)
-    ('spin', float64),  # 自旋角频率(unit: /yr)
-    ('jspin', float64),  # 自旋角动量(unit: Msun * Rsun2 / yr)
-    ('rochelobe', float64),  # 洛希瓣半径(unit: Rsun)
-    ('mass_core', float64),  # in solar units
-    ('mass_he_core', float64),  # in solar units
-    ('mass_c_core', float64),  # in solar units
-    ('mass_o_core', float64),  # in solar units
-    ('mass_co_core', float64),  # in solar units
-    ('mass_envelop', float64),  # in solar units
-    ('radius_core', float64),  # in solar units
-    ('radius_he_core', float64),  # in solar units
-    ('radius_c_core', float64),  # in solar units
-    ('radius_o_core', float64),  # in solar units
-    ('radius_co_core', float64),  # in solar units
-    ('mdot_wind_loss', float64),  # 星风质量损失率
-    ('mdot_wind_accrete', float64),  # 星风质量吸积率
-    ('jdot_spin_wind', float64),  # 星风提取的自旋角动量
-    ('jdot_spin_mb', float64),  # 磁制动提取的自旋角动量
-    ('max_time', float64),  # 最长演化时间        [unit: Myr]
-    ('time', float64),  # 当前的演化时间        [unit: Myr]
-    ('max_step', float64),  # 最大演化步长
-    ('step', int64),  # 当前的演化步长
-    ('data', float64[:, :]),  # 存储每个步长的属性
-    ('zpars', float64[:]),  # 与金属丰度相关的常数
-    ('msp', float64[:]),  # 主序分支系数
-    ('gbp', float64[:]),  # 巨星分支系数
-    ('tm', float64),  # 主序时间
-    ('tn', float64),  # 核燃烧时间
-    ('tscls', float64[:]),  # 到达不同阶段的时标
-    ('lums', float64[:]),  # 特征光度
-    ('GB', float64[:]),  # 巨星分支参数
+    ('type', float64),                      # steller type
+    ('Z', float64),                         # initial mass fraction of metals
+    ('mass0', float64),                     # initial mass (solar units)
+    ('mass', float64),                      # current mass (solar units)
+    ('R', float64),                         # radius (solar units)
+    ('L', float64),                         # luminosity (solar units)
+    ('dt', float64),                        # evolution timestep
+    ('Teff', float64),                      # effective temperature (K)
+    ('spin', float64),                      # 自旋角频率(unit: /yr)
+    ('jspin', float64),                     # 自旋角动量(unit: Msun * Rsun2 / yr)
+    ('rochelobe', float64),                 # 洛希瓣半径(unit: Rsun)
+    ('mass_core', float64),                 # in solar units
+    ('mass_he_core', float64),              # in solar units
+    ('mass_c_core', float64),               # in solar units
+    ('mass_o_core', float64),               # in solar units
+    ('mass_co_core', float64),              # in solar units
+    ('mass_envelop', float64),              # in solar units
+    ('radius_core', float64),               # in solar units
+    ('radius_he_core', float64),            # in solar units
+    ('radius_c_core', float64),             # in solar units
+    ('radius_o_core', float64),             # in solar units
+    ('radius_co_core', float64),            # in solar units
+    ('mdot_wind_loss', float64),            # 星风质量损失率
+    ('mdot_wind_accrete', float64),         # 星风质量吸积率
+    ('jdot_spin_wind', float64),            # 星风提取的自旋角动量
+    ('jdot_spin_mb', float64),              # 磁制动提取的自旋角动量
+    ('max_time', float64),                  # 最长演化时间        [unit: Myr]
+    ('time', float64),                      # 当前的演化时间        [unit: Myr]
+    ('max_step', float64),                  # 最大演化步长
+    ('step', int64),                        # 当前的演化步长
+    ('data', float64[:, :]),                # 存储每个步长的属性
+    ('zpars', float64[:]),                  # 与金属丰度相关的常数
+    ('msp', float64[:]),                    # 主序分支系数
+    ('gbp', float64[:]),                    # 巨星分支系数
+    ('tm', float64),                        # 主序时间
+    ('tn', float64),                        # 核燃烧时间
+    ('tscls', float64[:]),                  # 到达不同阶段的时标
+    ('lums', float64[:]),                   # 特征光度
+    ('GB', float64[:]),                     # 巨星分支参数
 ]
 
 
@@ -281,19 +282,16 @@ class SingleStar:
     # 估算零龄主序半径 Rzams
     def rzamsf(self):
         mx = np.sqrt(self.mass0)
-        rzams = ((self.msp[8] * self.mass0 ** 2 + self.msp[9] * self.mass0 ** 6) * mx + self.msp[
-            10] * self.mass0 ** 11 + (
-                         self.msp[11] + self.msp[12] * mx) * self.mass0 ** 19) / (
-                            self.msp[13] + self.msp[14] * self.mass0 ** 2 + (
-                            self.msp[15] * self.mass0 ** 8 + self.mass0 ** 18 + self.msp[16] * self.mass0 ** 19) * mx)
+        rzams = ((self.msp[8] * self.mass0 ** 2 + self.msp[9] * self.mass0 ** 6) * mx + self.msp[10] * self.mass0 ** 11 + (
+                self.msp[11] + self.msp[12] * mx) * self.mass0 ** 19) / (self.msp[13] + self.msp[14] * self.mass0 ** 2 + (
+                self.msp[15] * self.mass0 ** 8 + self.mass0 ** 18 + self.msp[16] * self.mass0 ** 19) * mx)
         return rzams
 
     # A function to evaluate the lifetime to the BGB or to Helium ignition if no FGB exists. (JH 24/11/97)
     # [已校验] Hurley_2000: equation 5.1(4)
     def tbgbf(self):
-        tbgb = (self.msp[17] + self.msp[18] * self.mass0 ** 4 + self.msp[19] * self.mass0 ** (
-                    11 / 2) + self.mass0 ** 7) / (
-                       self.msp[20] * self.mass0 ** 2 + self.msp[21] * self.mass0 ** 7)
+        tbgb = (self.msp[17] + self.msp[18] * self.mass0 ** 4 + self.msp[19] * self.mass0 ** (11 / 2) + self.mass0 ** 7) / (
+                self.msp[20] * self.mass0 ** 2 + self.msp[21] * self.mass0 ** 7)
         return tbgb
 
     # A function to evaluate the derivitive of the lifetime to the BGB
@@ -322,17 +320,15 @@ class SingleStar:
     # (for those models that have one). Note that this function is only valid for self.mass0 > Mhook.
     # [已校验] Hurley_2000: equation 5.1(7)
     def thook_div_tBGB(self):
-        term = 1 - 0.01 * max(self.msp[22] / self.mass0 ** self.msp[23],
-                              self.msp[24] + self.msp[25] / self.mass0 ** self.msp[26])
+        term = 1 - 0.01 * max(self.msp[22] / self.mass0 ** self.msp[23], self.msp[24] + self.msp[25] / self.mass0 ** self.msp[26])
         value = max(0.5, term)
         return value
 
     # 估算主序末尾的光度
     # [已校验] Hurley_2000: equation 5.1(8)
     def ltmsf(self):
-        ltms = (self.msp[27] * self.mass0 ** 3 + self.msp[28] * self.mass0 ** 4 + self.msp[29] * self.mass0 ** (
-                    self.msp[32] + 1.8)) / (
-                       self.msp[30] + self.msp[31] * self.mass0 ** 5 + self.mass0 ** self.msp[32])
+        ltms = (self.msp[27] * self.mass0 ** 3 + self.msp[28] * self.mass0 ** 4 + self.msp[29] * self.mass0 ** (self.msp[32] + 1.8)) / (
+                self.msp[30] + self.msp[31] * self.mass0 ** 5 + self.mass0 ** self.msp[32])
         return ltms
 
     # 估算光度 alpha 系数
@@ -346,14 +342,11 @@ class SingleStar:
         elif self.mass0 < self.msp[37]:
             lalpha = 0.3 + ((self.msp[40] - 0.3) / (self.msp[37] - 0.7)) * (self.mass0 - 0.7)
         elif self.mass0 < self.msp[38]:
-            lalpha = self.msp[40] + ((self.msp[41] - self.msp[40]) / (self.msp[38] - self.msp[37])) * (
-                        self.mass0 - self.msp[37])
+            lalpha = self.msp[40] + ((self.msp[41] - self.msp[40]) / (self.msp[38] - self.msp[37])) * (self.mass0 - self.msp[37])
         elif self.mass0 < mcut:
-            lalpha = self.msp[41] + ((self.msp[42] - self.msp[41]) / (mcut - self.msp[38])) * (
-                        self.mass0 - self.msp[38])
+            lalpha = self.msp[41] + ((self.msp[42] - self.msp[41]) / (mcut - self.msp[38])) * (self.mass0 - self.msp[38])
         else:
-            lalpha = (self.msp[33] + self.msp[34] * self.mass0 ** self.msp[36]) / (
-                        self.mass0 ** 0.4 + self.msp[35] * self.mass0 ** 1.9)
+            lalpha = (self.msp[33] + self.msp[34] * self.mass0 ** self.msp[36]) / (self.mass0 ** 0.4 + self.msp[35] * self.mass0 ** 1.9)
         return lalpha
 
     # 估算光度 beta 系数
@@ -380,19 +373,16 @@ class SingleStar:
     # A function to evaluate the radius at the end of the MS
     # Note that a safety check is added to ensure Rtms > Rzams when extrapolating the function to low masses. (JH 24/11/97)
     # [已校验] Hurley_2000: equation 5.1(9)
-    def rtmsf(self, m=0):
-        mass = self.mass0 if m == 0 else m
-        if mass <= self.msp[62]:
-            rtms = (self.msp[52] + self.msp[53] * mass ** self.msp[55]) / (
-                        self.msp[54] + mass ** self.msp[56])
+    def rtmsf(self):
+        if self.mass0 <= self.msp[62]:
+            rtms = (self.msp[52] + self.msp[53] * self.mass0 ** self.msp[55]) / (self.msp[54] + self.mass0 ** self.msp[56])
             # extrapolated to low mass(M < 0.5)
             rtms = max(rtms, 1.5 * self.rzamsf())
         elif self.mass0 >= self.msp[62] + 0.1:
-            rtms = (self.msp[57] * mass ** 3 + self.msp[58] * mass ** self.msp[61] + self.msp[
-                59] * mass ** (self.msp[61] + 1.5)) / (
-                           self.msp[60] + mass ** 5)
+            rtms = (self.msp[57] * self.mass0 ** 3 + self.msp[58] * self.mass0 ** self.msp[61] + self.msp[59] * self.mass0 ** (self.msp[61] + 1.5)) / (
+                    self.msp[60] + self.mass0 ** 5)
         else:
-            rtms = self.msp[63] + ((mass - self.msp[62]) / 0.1) * (self.msp[64] - self.msp[63])
+            rtms = self.msp[63] + ((self.mass0 - self.msp[62]) / 0.1) * (self.msp[64] - self.msp[63])
         return rtms
 
     # 估算半径 alpha 系数
@@ -405,8 +395,7 @@ class SingleStar:
         elif self.mass0 <= self.msp[70]:
             ralpha = self.msp[74] + ((self.msp[75] - self.msp[74]) / (self.msp[70] - 0.65)) * (self.mass0 - 0.65)
         elif self.mass0 <= self.msp[71]:
-            ralpha = self.msp[75] + ((self.msp[76] - self.msp[75]) / (self.msp[71] - self.msp[70])) * (
-                        self.mass0 - self.msp[70])
+            ralpha = self.msp[75] + ((self.msp[76] - self.msp[75]) / (self.msp[71] - self.msp[70])) * (self.mass0 - self.msp[70])
         elif self.mass0 <= self.msp[72]:
             ralpha = (self.msp[65] * self.mass0 ** self.msp[67]) / (self.msp[66] + self.mass0 ** self.msp[68])
         else:
@@ -457,72 +446,100 @@ class SingleStar:
     # [已校验] Hurley_2000: equation 5.1(10)
     def lbgbf(self):
         lbgb = (self.gbp[1] * self.mass0 ** self.gbp[5] + self.gbp[2] * self.mass0 ** self.gbp[8]) / (
-                self.gbp[3] + self.gbp[4] * self.mass0 ** self.gbp[7] + self.mass0 ** self.gbp[6])
+                    self.gbp[3] + self.gbp[4] * self.mass0 ** self.gbp[7] + self.mass0 ** self.gbp[6])
         return lbgb
 
     # A function to evaluate the derivitive of the Lbgb function.
     # Note that this function is only valid for LM & IM stars
     def lbgbdf(self):
         f = self.gbp[1] * self.mass0 ** self.gbp[5] + self.gbp[2] * self.mass0 ** self.gbp[8]
-        df = self.gbp[5] * self.gbp[1] * self.mass0 ** (self.gbp[5] - 1) + self.gbp[8] * self.gbp[2] * self.mass0 ** (
-                    self.gbp[8] - 1)
+        df = self.gbp[5] * self.gbp[1] * self.mass0 ** (self.gbp[5] - 1) + self.gbp[8] * self.gbp[2] * self.mass0 ** (self.gbp[8] - 1)
         g = self.gbp[3] + self.gbp[4] * self.mass0 ** self.gbp[7] + self.mass0 ** self.gbp[6]
         dg = self.gbp[7] * self.gbp[4] * self.mass0 ** (self.gbp[7] - 1) + self.gbp[6] * self.mass0 ** (self.gbp[6] - 1)
         lbgbd = (df * g - f * dg) / (g * g)
         return lbgbd
 
-    # A function to evaluate the He-burning lifetime.
-    # For IM & HM stars, tHef is relative to tBGB.
-    # Continuity between LM and IM stars is ensured by setting thefl = tHef(mhefl,0.0,0.0)
-    # the call to themsf ensures continuity between HB and NHe stars as Menv -> 0.
-    # [已校验] Hurley_2000: equation 5.3(57)
-    def tHef(self, m, mc, mhefl):
-        if m <= mhefl:
-            mm = max((mhefl - m) / (mhefl - mc), 1e-12)
-            tHe = (self.gbp[54] + (self.themsf(mc) - self.gbp[54]) * mm ** self.gbp[55]) * (
-                        1 + self.gbp[57] * np.exp(m * self.gbp[56]))
-        else:
-            tHe = (self.gbp[58] * m ** self.gbp[61] + self.gbp[59] * m ** 5) / (self.gbp[60] + m ** 5)
-        return tHe
-
-    # 估算 He 星的主序时间
-    # [已校验] Hurley_2000: equation 6.1(79)
-    def themsf(self, m=0):
+    # 估算 He星零龄主序的光度
+    # [已校验] Hurley_2000: equation 6.1(77)
+    def lzhef(self, m=0):
         if m == 0:
-            thems = (0.4129 + 18.81 * self.mass0 ** 4 + 1.853 * self.mass0 ** 6) / self.mass0 ** 6.5
+            lzhe = 15262 * self.mass0 ** 10.25 / (self.mass0 ** 9 + 29.54 * self.mass0 ** 7.5 + 31.18 * self.mass0 ** 6 + 0.0469)
         else:
-            thems = (0.4129 + 18.81 * m ** 4 + 1.853 * m ** 6) / m ** 6.5
-        return thems
+            lzhe = 15262 * m ** 10.25 / (m ** 9 + 29.54 * m ** 7.5 + 31.18 * m ** 6 + 0.0469)
+        return lzhe
 
-    # 通过光度估算 GB, AGB and NHe stars 的 Mc
-    # [已校验] Hurley_2000: equation 5.2(37)等效
-    def lum_to_mc_gb(self, lum):
-        if lum <= self.lums[6]:
-            mc = (lum / self.GB[4]) ** (1 / self.GB[5])
+    # A function to evaluate the ZAHB luminosity for LM stars. (OP 28/01/98)
+    # Continuity with LHe, min for IM stars is ensured by setting lx = lHeif(mhefl,z,0.0,1.0)*lHef(mhefl,z,mfgb)
+    # and the call to lzhef ensures continuity between the ZAHB and the NHe-ZAMS as Menv -> 0.
+    # [已校验] Hurley_2000: equation 5.3(53)
+    def lzahbf(self, m, mc, mhefl):
+        a5 = self.lzhef(mc)
+        a4 = (self.gbp[69] + a5 - self.gbp[74]) / ((self.gbp[74] - a5) * np.exp(self.gbp[71] * mhefl))
+        mm = max((m - mc) / (mhefl - mc), 1e-12)
+        lzahb = a5 + (1 + self.gbp[72]) * self.gbp[69] * mm ** self.gbp[70] / (
+                (1 + self.gbp[72] * mm ** self.gbp[73]) * (1 + a4 * np.exp(m * self.gbp[71])))
+        return lzahb
+
+    # A function to evalute the luminosity pertubation on the MS phase for M > Mhook. (JH 24/11/97)【我对这个函数的定义有改动】
+    # [已校验] Hurley_2000: equation 5.1.1(16)
+    def lpertf(self):
+        if self.mass0 <= self.zpars[1]:
+            lhook = 0
+        elif self.mass0 >= self.msp[51]:
+            lhook = min(self.msp[47] / self.mass0 ** self.msp[48], self.msp[49] / self.mass0 ** self.msp[50])
         else:
-            mc = (lum / self.GB[3]) ** (1 / self.GB[6])
-        return mc
+            B = min(self.msp[47] / self.msp[51] ** self.msp[48], self.msp[49] / self.msp[51] ** self.msp[50])
+            lhook = B * ((self.mass0 - self.zpars[1]) / (self.msp[51] - self.zpars[1])) ** 0.4
+        return lhook
 
-    # A function to evaluate core mass at the BAGB  (OP 25/11/97)
-    # [已校验] Hurley_2000: equation 5.3(66)
-    def mcagbf(self, m):
-        mcagb = (self.gbp[37] + self.gbp[35] * m ** self.gbp[36]) ** (1 / 4)
-        return mcagb
-
-    # A function to evaluate core mass at BGB or He ignition (depending on mchefl) for IM & HM stars
-    # [已校验] Hurley_2000: equation 5.2(44)
-    def mcheif(self, m, mhefl, mchefl):
-        mcbagb = self.mcagbf(m)
-        a3 = mchefl ** 4 - self.gbp[33] * mhefl ** self.gbp[34]
-        mchei = min(0.95 * mcbagb, (a3 + self.gbp[33] * m ** self.gbp[34]) ** (1 / 4))
-        return mchei
-
-    # A function to evaluate Mc given t for GB, AGB and NHe stars
-    # [已校验] Hurley_2000: equation 5.2(34、39)
-    def mcgbtf(self, t, A, tinf1, tinf2, tx):
-        if t <= tx:
-            mcgbt = ((self.GB[5] - 1) * A * self.GB[4] * (tinf1 - t)) ** (1 / (1 - self.GB[5]))
+    # A function to evalute the radius pertubation on the MS phase for M > Mhook. (JH 24/11/97)【我对这个函数的定义有改动】
+    # [已校验] Hurley_2000: equation 5.1.1(17)
+    def rpertf(self):
+        if self.mass0 <= self.zpars[1]:
+            rhook = 0
+        elif self.mass0 <= self.msp[94]:
+            rhook = self.msp[95] * np.sqrt((self.mass0 - self.zpars[1]) / (self.msp[94] - self.zpars[1]))
+        elif self.mass0 <= 2:
+            m1 = 2
+            B = (self.msp[90] + self.msp[91] * m1 ** (7 / 2)) / (self.msp[92] * m1 ** 3 + m1 ** self.msp[93]) - 1
+            rhook = self.msp[95] + (B - self.msp[95]) * ((self.mass0 - self.msp[94]) / (m1 - self.msp[94])) ** self.msp[96]
         else:
-            mcgbt = ((self.GB[6] - 1) * A * self.GB[3] * (tinf2 - t)) ** (1 / (1 - self.GB[6]))
-        return mcgbt
+            rhook = (self.msp[90] + self.msp[91] * self.mass0 ** (7 / 2)) / (self.msp[92] * self.mass0 ** 3 + self.mass0 ** self.msp[93]) - 1
+        return rhook
 
+    # A function to evaluate the BAGB luminosity. (OP 21/04/98)
+    # Continuity between LM and IM functions is ensured by setting gbp(16) = lbagbf(mhefl,0.0) with gbp(16) = 1.0.
+    # [已校验] Hurley_2000: equation 5.3(56) 第三行有出入
+    def lbagbf(self):
+        a4 = (self.gbp[9] * self.zpars[2] ** self.gbp[10] - self.gbp[16]) / (np.exp(self.zpars[2] * self.gbp[11]) * self.gbp[16])
+        if self.mass0 < self.zpars[2]:
+            lbagb = self.gbp[9] * self.mass0 ** self.gbp[10] / (1 + a4 * np.exp(self.mass0 * self.gbp[11]))
+        else:
+            lbagb = (self.gbp[12] + self.gbp[13] * self.mass0 ** (self.gbp[15] + 1.8)) / (self.gbp[14] + self.mass0 ** self.gbp[15])
+        return lbagb
+
+    # A function to evaluate He-ignition luminosity  (OP 24/11/97)
+    # Continuity between the LM and IM functions is ensured with a first call setting lhefl = lHeIf(mhefl,0.0)
+    # [已校验] Hurley_2000: equation 5.3(49) 第二行有出入
+    def lHeIf(self):
+        if self.mass0 < self.zpars[2]:
+            lHeI = self.gbp[38] * self.mass0 ** self.gbp[39] / (1 + self.gbp[41] * np.exp(self.mass0 * self.gbp[40]))
+        else:
+            lHeI = (self.gbp[42] + self.gbp[43] * self.mass0 ** 3.8) / (self.gbp[44] + self.mass0 ** 2)
+        return lHeI
+
+    # A function to evaluate the ratio LHe,min/LHeI  (OP 20/11/97)
+    # Note that this function is everywhere <= 1, and is only valid for IM stars
+    # [已校验] Hurley_2000: equation 5.3(51)\
+    def lHef(self):
+        lHe = (self.gbp[45] + self.gbp[46] * self.mass0 ** (self.gbp[48] + 0.1)) / (self.gbp[47] + self.mass0 ** self.gbp[48])
+        return lHe
+
+    # 通过 Mc 估算 GB, AGB and Naked He stars 的光度
+    # [已校验] Hurley_2000: equation 5.2(37)
+    def mc_to_lum_gb(self, mc, GB):
+        if mc <= GB[7]:
+            lum = GB[4] * (mc ** GB[5])
+        else:
+            lum = GB[3] * (mc ** GB[6])
+        return lum

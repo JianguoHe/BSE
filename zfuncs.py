@@ -8,47 +8,8 @@ import astropy.coordinates.sky_coordinate as skycoord
 # 集合了所有的独立函数（公式）
 
 
-# A function to evalute the luminosity pertubation on the MS phase for M > Mhook. (JH 24/11/97)【我对这个函数的定义有改动】
-# [已校验] Hurley_2000: equation 5.1.1(16)
-@conditional_njit()
-def lpertf(m, mhook, x):
-    if m <= mhook:
-        lhook = 0
-    elif m >= x.msp[51]:
-        lhook = min(x.msp[47] / m ** x.msp[48], x.msp[49] / m ** x.msp[50])
-    else:
-        B = min(x.msp[47] / x.msp[51] ** x.msp[48], x.msp[49] / x.msp[51] ** x.msp[50])
-        lhook = B * ((m - mhook) / (x.msp[51] - mhook)) ** 0.4
-    return lhook
 
 
-# A function to evalute the radius pertubation on the MS phase for M > Mhook. (JH 24/11/97)【我对这个函数的定义有改动】
-# [已校验] Hurley_2000: equation 5.1.1(17)
-@conditional_njit()
-def rpertf(m, mhook, x):
-    if m <= mhook:
-        rhook = 0
-    elif m <= x.msp[94]:
-        rhook = x.msp[95] * np.sqrt((m - mhook) / (x.msp[94] - mhook))
-    elif m <= 2:
-        m1 = 2
-        B = (x.msp[90] + x.msp[91] * m1 ** (7 / 2)) / (x.msp[92] * m1 ** 3 + m1 ** x.msp[93]) - 1
-        rhook = x.msp[95] + (B - x.msp[95]) * ((m - x.msp[94]) / (m1 - x.msp[94])) ** x.msp[96]
-    else:
-        rhook = (x.msp[90] + x.msp[91] * m ** (7 / 2)) / (x.msp[92] * m ** 3 + m ** x.msp[93]) - 1
-    return rhook
-
-# A function to evaluate the BAGB luminosity. (OP 21/04/98)
-# Continuity between LM and IM functions is ensured by setting gbp(16) = lbagbf(mhefl,0.0) with gbp(16) = 1.0.
-# [已校验] Hurley_2000: equation 5.3(56) 第三行有出入
-@conditional_njit()
-def lbagbf(m, mhefl, x):
-    a4 = (x.gbp[9] * mhefl ** x.gbp[10] - x.gbp[16]) / (np.exp(mhefl * x.gbp[11]) * x.gbp[16])
-    if m < mhefl:
-        lbagb = x.gbp[9] * m ** x.gbp[10] / (1 + a4 * np.exp(m * x.gbp[11]))
-    else:
-        lbagb = (x.gbp[12] + x.gbp[13] * m ** (x.gbp[15] + 1.8)) / (x.gbp[14] + m ** x.gbp[15])
-    return lbagb
 
 
 # 估算巨星分支上的半径
@@ -160,36 +121,9 @@ def lgbtf(t, A , GB, tinf1, tinf2, tx):
 
 
 
-# 通过 Mc 估算 GB, AGB and Naked He stars 的光度
-# [已校验] Hurley_2000: equation 5.2(37)
-@conditional_njit()
-def mc_to_lum_gb(mc, GB):
-    if mc <= GB[7]:
-        lum = GB[4] * (mc ** GB[5])
-    else:
-        lum = GB[3] * (mc ** GB[6])
-    return lum
 
 
-# A function to evaluate He-ignition luminosity  (OP 24/11/97)
-# Continuity between the LM and IM functions is ensured with a first call setting lhefl = lHeIf(mhefl,0.0)
-# [已校验] Hurley_2000: equation 5.3(49) 第二行有出入
-@conditional_njit()
-def lHeIf(m, mhefl, x):
-    if m < mhefl:
-        lHeI = x.gbp[38] * m ** x.gbp[39] / (1 + x.gbp[41] * np.exp(m * x.gbp[40]))
-    else:
-        lHeI = (x.gbp[42] + x.gbp[43] * m ** 3.8) / (x.gbp[44] + m ** 2)
-    return lHeI
 
-
-# A function to evaluate the ratio LHe,min/LHeI  (OP 20/11/97)
-# Note that this function is everywhere <= 1, and is only valid for IM stars
-# [已校验] Hurley_2000: equation 5.3(51)
-@conditional_njit()
-def lHef(m, x):
-    lHe = (x.gbp[45] + x.gbp[46] * m ** (x.gbp[48] + 0.1)) / (x.gbp[47] + m ** x.gbp[48])
-    return lHe
 
 
 # A function to evaluate the minimum radius during blue loop(He-burning) for IM & HM stars
@@ -220,21 +154,6 @@ def tblf(m, mhefl, mfgb,x):
         tbl = 0
     return tbl
 
-
-# A function to evaluate the ZAHB luminosity for LM stars. (OP 28/01/98)
-# Continuity with LHe, min for IM stars is ensured by setting lx = lHeif(mhefl,z,0.0,1.0)*lHef(mhefl,z,mfgb)
-# and the call to lzhef ensures continuity between the ZAHB and the NHe-ZAMS as Menv -> 0.
-# [已校验] Hurley_2000: equation 5.3(53)
-@conditional_njit()
-def lzahbf(m, mc, mhefl, x):
-    a5 = lzhef(mc)
-    a4 = (x.gbp[69] + a5 - x.gbp[74]) / ((x.gbp[74] - a5) * np.exp(x.gbp[71] * mhefl))
-    mm = max((m - mc) / (mhefl - mc), 1e-12)
-    lzahb = a5 + (1 + x.gbp[72]) * x.gbp[69] * mm ** x.gbp[70] / (
-            (1 + x.gbp[72] * mm ** x.gbp[73]) * (1 + a4 * np.exp(m * x.gbp[71])))
-    return lzahb
-
-
 # 估算低质量恒星的零龄水平分支(ZAHB)半径
 # Continuity with R(LHe,min) for IM stars is ensured by setting lx = lHeif(mhefl,z,0.0,1.0)*lHef(mhefl,z,mfgb),
 # and the call to rzhef ensures continuity between the ZAHB and the NHe-ZAMS as Menv -> 0.
@@ -249,12 +168,6 @@ def rzahbf(m, mc, mhefl, x):
     return rzahb
 
 
-# 估算 He星零龄主序的光度
-# [已校验] Hurley_2000: equation 6.1(77)
-@conditional_njit()
-def lzhef(m):
-    lzhe = 15262 * m ** 10.25 / (m ** 9 + 29.54 * m ** 7.5 + 31.18 * m ** 6 + 0.0469)
-    return lzhe
 
 
 # 估算 He 星零龄主序的半径
