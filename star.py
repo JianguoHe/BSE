@@ -33,7 +33,9 @@ import numpy as np
 #       ------------------------------------------------------------
 
 @conditional_njit()
-def star(kw, mass, mt, zcnsts):
+def star(self, zcnsts):
+
+    kw, mass, mt = self.type, self.mass0, self.mass
     # 输入 kw, mass, mt, zcnsts
 
     # 输出参数
@@ -63,7 +65,7 @@ def star(kw, mass, mt, zcnsts):
         # Change in slope of giant L-Mc relation
         lums[6] = GB[4] * GB[7] ** GB[5]
         # 设置 He 星的 GB 时标(下面的mc1表示HeMS末尾的核质量)
-        mc1 = lum_to_mc_gb(lums[2], GB, lums[6])
+        mc1 = self.lum_to_mc_gb(lums[2])
         tscls[4] = tm + (1 / ((GB[5] - 1) * GB[8] * GB[4])) * mc1 ** (1 - GB[5])
         tscls[6] = tscls[4] - (tscls[4] - tm) * ((GB[7] / mc1) ** (1 - GB[5]))
         tscls[5] = tscls[6] + (1 / ((GB[6] - 1) * GB[8] * GB[3])) * GB[7] ** (1 - GB[6])
@@ -140,7 +142,7 @@ def star(kw, mass, mt, zcnsts):
             tscls[2] = tscls[5] - (1 / ((GB[6] - 1) * GB[1] * GB[3])) * ((GB[3] / lums[4]) ** ((GB[6] - 1) / GB[6]))
         # 小质量恒星
         if mass <= zcnsts.zpars[2]:
-            mc1 = lum_to_mc_gb(lums[4], GB, lums[6])
+            mc1 = self.lum_to_mc_gb(lums[4])
             lums[5] = lzahbf(mass, mc1, zcnsts.zpars[2], zcnsts)
             tscls[3] = tHef(mass, mc1, zcnsts.zpars[2], zcnsts)
         # 中等质量恒星
@@ -161,7 +163,7 @@ def star(kw, mass, mt, zcnsts):
 
     # 设置巨星分支底部的核质量
     if mass <= zcnsts.zpars[2]:
-        GB[9] = lum_to_mc_gb(lums[3], GB, lums[6])
+        GB[9] = self.lum_to_mc_gb(lums[3])
     elif mass <= zcnsts.zpars[3]:
         GB[9] = mcheif(mass, zcnsts.zpars[2], zcnsts.zpars[9], zcnsts)
     else:
@@ -244,8 +246,8 @@ def star(kw, mass, mt, zcnsts):
                     tn = tscls[2] + tscls[3] * ((mt - mc1) / (mcbagb - mc1))
             # 小质量恒星
             elif mass <= zcnsts.zpars[2]:
-                mc1 = lum_to_mc_gb(lums[3], GB, lums[6])
-                mc2 = lum_to_mc_gb(lums[4], GB, lums[6])
+                mc1 = self.lum_to_mc_gb(lums[3])
+                mc2 = self.lum_to_mc_gb(lums[4])
                 if mt <= mc1:
                     tn = tscls[1]
                 elif mt <= mc2:

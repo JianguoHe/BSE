@@ -116,14 +116,7 @@ def mctmsf(m):
     return mctms
 
 
-# A function to evaluate core mass at BGB or He ignition (depending on mchefl) for IM & HM stars
-# [已校验] Hurley_2000: equation 5.2(44)
-@conditional_njit()
-def mcheif(m, mhefl, mchefl, x):
-    mcbagb = mcagbf(m, x)
-    a3 = mchefl ** 4 - x.gbp[33] * mhefl ** x.gbp[34]
-    mchei = min(0.95 * mcbagb, (a3 + x.gbp[33] * m ** x.gbp[34]) ** (1 / 4))
-    return mchei
+
 
 
 # A function to evaluate mass at BGB or He ignition (depending on mchefl) for IM & HM stars by inverting mcheif
@@ -136,12 +129,7 @@ def mheif(mc, mhefl, mchefl, x):
     return mhei
 
 
-# A function to evaluate core mass at the BAGB  (OP 25/11/97)
-# [已校验] Hurley_2000: equation 5.3(66)
-@conditional_njit()
-def mcagbf(m, x):
-    mcagb = (x.gbp[37] + x.gbp[35] * m ** x.gbp[36]) ** (1 / 4)
-    return mcagb
+
 
 
 # A function to evaluate mass at the BAGB by inverting mcagbf.
@@ -155,15 +143,7 @@ def mbagbf(mc, x):
     return mbagb
 
 
-# A function to evaluate Mc given t for GB, AGB and NHe stars
-# [已校验] Hurley_2000: equation 5.2(34、39)
-@conditional_njit()
-def mcgbtf(t, A, GB, tinf1, tinf2, tx):
-    if t <= tx:
-        mcgbt = ((GB[5] - 1) * A * GB[4] * (tinf1 - t)) ** (1/(1-GB[5]))
-    else:
-        mcgbt = ((GB[6] - 1) * A * GB[3] * (tinf2 - t)) ** (1/(1-GB[6]))
-    return mcgbt
+
 
 
 # A function to evaluate L given t for GB, AGB and NHe stars
@@ -177,15 +157,7 @@ def lgbtf(t, A , GB, tinf1, tinf2, tx):
     return lgbt
 
 
-# 通过光度估算 GB, AGB and NHe stars 的 Mc
-# [已校验] Hurley_2000: equation 5.2(37)等效
-@conditional_njit()
-def lum_to_mc_gb(lum, GB, lx):
-    if lum <= lx:
-        mc = (lum / GB[4]) ** (1 / GB[5])
-    else:
-        mc = (lum / GB[3]) ** (1 / GB[6])
-    return mc
+
 
 
 # 通过 Mc 估算 GB, AGB and Naked He stars 的光度
@@ -227,20 +199,6 @@ def rminf(m, x):
     rmin = (x.gbp[49] * m + (x.gbp[50] * m) ** x.gbp[52] * m ** x.gbp[53]) / (x.gbp[51] + m ** x.gbp[53])
     return rmin
 
-
-# A function to evaluate the He-burning lifetime.
-# For IM & HM stars, tHef is relative to tBGB.
-# Continuity between LM and IM stars is ensured by setting thefl = tHef(mhefl,0.0,0.0)
-# the call to themsf ensures continuity between HB and NHe stars as Menv -> 0.
-# [已校验] Hurley_2000: equation 5.3(57)
-@conditional_njit()
-def tHef(m, mc, mhefl, x):
-    if m <= mhefl:
-        mm = max((mhefl - m) / (mhefl - mc), 1e-12)
-        tHe = (x.gbp[54] + (themsf(mc) - x.gbp[54]) * mm ** x.gbp[55]) * (1 + x.gbp[57] * np.exp(m * x.gbp[56]))
-    else:
-        tHe = (x.gbp[58] * m ** x.gbp[61] + x.gbp[59] * m ** 5) / (x.gbp[60] + m ** 5)
-    return tHe
 
 
 # A function to evaluate the blue-loop fraction of the He-burning lifetime for IM & HM stars  (OP 28/01/98)
@@ -307,12 +265,7 @@ def rzhef(m):
     return rzhe
 
 
-# 估算 He 星的主序时间
-# [已校验] Hurley_2000: equation 6.1(79)
-@conditional_njit()
-def themsf(m):
-    thems = (0.4129 + 18.81 * m ** 4 + 1.853 * m ** 6) / m ** 6.5
-    return thems
+
 
 
 # 估算 He 星主序上的光度
