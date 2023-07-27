@@ -3,7 +3,7 @@ from numba.experimental import jitclass
 import numpy as np
 from const_new import gamma_mb, mb_model, yearsc, Zsun, neta, bwind, f_WR, f_LBV, Rsun, Teffsun
 from utils import conditional_jitclass
-# from zcnst import zcnsts_set
+from zcnst import zcnsts_set
 
 
 # Single star class
@@ -97,12 +97,7 @@ class SingleStar:
         self.tscls = np.zeros(20)
         self.lums = np.zeros(10)
         self.GB = np.zeros(10)
-
-    # 计算金属丰度相关常数
-    def _set_jorb(self):
-        reduced_mass = self.star1.mass * self.star2.mass / self.totalmass
-        jorb = reduced_mass * self.omega * self.sep ** 2 * np.sqrt(1 - self.ecc ** 2)
-        return jorb
+        zcnsts_set(self)            # 设置金属丰度相关常数
 
     # 计算表面温度
     def cal_Teff(self):

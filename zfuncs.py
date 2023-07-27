@@ -8,8 +8,6 @@ import astropy.coordinates.sky_coordinate as skycoord
 # 集合了所有的独立函数（公式）
 
 
-
-
 # A function to evaluate radius derivitive on the GB (as f(L)).
 @conditional_njit()
 def rgbdf(m, lum, x):
@@ -101,10 +99,6 @@ def tblf(m, mhefl, mfgb,x):
     if tbl < 1e-10:
         tbl = 0
     return tbl
-
-
-
-
 
 
 
