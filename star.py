@@ -1,8 +1,5 @@
-# from zfuncs import lzamsf, lzahbf, lzhef, ltmsf, lbgbf, lHeIf, lHef, lbagbf, mc_to_lum_gb
-# from zfuncs import tbgbf, thook_div_tBGB, tHef, themsf, lum_to_mc_gb, mcagbf, mcheif, mcgbtf
 from const import mch
 from utils import conditional_njit
-import numpy as np
 
 # 用途: 推导不同演化阶段的时标、标志性光度、巨星分支参数
 
@@ -236,15 +233,15 @@ def star(self):
         else:
             # 大质量恒星
             if self.mass0 > self.zcnsts.zpars[3]:
-                mc1 = mcheif(mass, self.zcnsts.zpars[2], self.zcnsts.zpars[10], zcnsts)
+                mc1 = self.mcheif(self.mass0, self.zcnsts.zpars[2], self.zcnsts.zpars[10])
                 if self.mass <= mc1:
                     self.tn = self.tscls[2]
                 else:
                     self.tn = self.tscls[2] + self.tscls[3] * ((self.mass - mc1) / (mcbagb - mc1))
             # 小质量恒星
             elif self.mass0 <= self.zcnsts.zpars[2]:
-                mc1 = self.lum_to_mc_gb(lums[3])
-                mc2 = self.lum_to_mc_gb(lums[4])
+                mc1 = self.lum_to_mc_gb(self.lums[3])
+                mc2 = self.lum_to_mc_gb(self.lums[4])
                 if self.mass <= mc1:
                     self.tn = self.tscls[1]
                 elif self.mass <= mc2:
@@ -256,8 +253,8 @@ def star(self):
                     self.tn = self.tscls[2] + self.tscls[3] * ((self.mass - mc2) / (mcbagb - mc2))
             # 中等质量恒星
             else:
-                mc1 = mcheif(mass, self.zcnsts.zpars[2], self.zcnsts.zpars[9], zcnsts)
-                mc2 = mcheif(mass, self.zcnsts.zpars[2], self.zcnsts.zpars[10], zcnsts)
+                mc1 = self.mcheif(self.mass0, self.zcnsts.zpars[2], self.zcnsts.zpars[9])
+                mc2 = self.mcheif(self.mass0, self.zcnsts.zpars[2], self.zcnsts.zpars[10])
                 if self.mass <= mc1:
                     self.tn = self.tscls[1]
                 elif self.mass <= mc2:
@@ -265,5 +262,5 @@ def star(self):
                     self.tn = self.tscls[1] + tgb * ((self.mass - mc1) / (mc2 - mc1))
                 else:
                     self.tn = self.tscls[2] + self.tscls[3] * ((self.mass - mc2) / (mcbagb - mc2))
-    self.tn = min(tn, self.tscls[14])
+    self.tn = min(self.tn, self.tscls[14])
     return 0
