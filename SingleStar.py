@@ -3,7 +3,7 @@ from numba.experimental import jitclass
 import numpy as np
 from const_new import gamma_mb, mb_model, yearsc, Zsun, neta, bwind, f_WR, f_LBV, Rsun, Teffsun
 from utils import conditional_jitclass
-from zcnst import zcnsts_set
+# from zcnst import zcnsts_set
 
 
 # Single star class

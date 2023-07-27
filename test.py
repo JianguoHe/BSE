@@ -8,10 +8,12 @@ binary = BinaryStar(star1=star1, star2=star2, period=66.8, eccentricity=0)
 binary.evolve()
 
 
-print(binary.sep, binary.period, binary.jorb, binary.jdot_gr)
-print(star1.rochelobe, star2.rochelobe)
-print(binary.state, binary.event)
-print(star1.zpars)
+# print(binary.sep, binary.period, binary.jorb, binary.jdot_gr)
+# print(star1.rochelobe, star2.rochelobe)
+# print(binary.state, binary.event)
+# print(star1.tm)
+# print(star2.tm)
+
 
 
 

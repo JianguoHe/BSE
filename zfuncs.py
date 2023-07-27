@@ -8,10 +8,6 @@ import astropy.coordinates.sky_coordinate as skycoord
 # 集合了所有的独立函数（公式）
 
 
-
-
-
-
 # 估算巨星分支上的半径
 # [已校验] Hurley_2000: equation 5.2(46)
 @conditional_njit()
@@ -76,10 +72,6 @@ def mctmsf(m):
     mctms = (1.586 + m ** 5.25) / (2.434 + 1.02 * m ** 5.25)
     return mctms
 
-
-
-
-
 # A function to evaluate mass at BGB or He ignition (depending on mchefl) for IM & HM stars by inverting mcheif
 @conditional_njit()
 def mheif(mc, mhefl, mchefl, x):
@@ -88,9 +80,6 @@ def mheif(mc, mhefl, mchefl, x):
     m2 = ((mc ** 4 - a3) / x.gbp[33]) ** (1 / x.gbp[34])
     mhei = max(m1, m2)
     return mhei
-
-
-
 
 
 # A function to evaluate mass at the BAGB by inverting mcagbf.
@@ -102,10 +91,6 @@ def mbagbf(mc, x):
     else:
         mbagb = 0
     return mbagb
-
-
-
-
 
 # A function to evaluate L given t for GB, AGB and NHe stars
 # [已校验] Hurley_2000: equation 5.2(35)
@@ -121,18 +106,12 @@ def lgbtf(t, A , GB, tinf1, tinf2, tx):
 
 
 
-
-
-
-
-
 # A function to evaluate the minimum radius during blue loop(He-burning) for IM & HM stars
 # [已校验] Hurley_2000: equation 5.3(55)
 @conditional_njit()
 def rminf(m, x):
     rmin = (x.gbp[49] * m + (x.gbp[50] * m) ** x.gbp[52] * m ** x.gbp[53]) / (x.gbp[51] + m ** x.gbp[53])
     return rmin
-
 
 
 # A function to evaluate the blue-loop fraction of the He-burning lifetime for IM & HM stars  (OP 28/01/98)
@@ -176,10 +155,6 @@ def rzahbf(m, mc, mhefl, x):
 def rzhef(m):
     rzhe = 0.2391 * m ** 4.6 / (m ** 4 + 0.162 * m ** 3 + 0.0065)
     return rzhe
-
-
-
-
 
 # 估算 He 星主序上的光度
 # [已校验] Hurley_2000: equation 6.1(78)

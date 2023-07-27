@@ -4,7 +4,6 @@ from const import mch
 from utils import conditional_njit
 import numpy as np
 
-
 # 用途: 推导不同演化阶段的时标、标志性光度、巨星分支参数
 
 # Computes the characteristic luminosities at different stages (lums), and various timescales (tscls).
@@ -33,25 +32,23 @@ import numpy as np
 #       ------------------------------------------------------------
 
 @conditional_njit()
-def star(self, zcnsts):
-
-    kw, mass, mt = self.type, self.mass0, self.mass
+def star(self):
     # 输入 kw, mass, mt, zcnsts
 
     # 输出参数
-    tm = 0                                 # 主序时间
-    tn = 0                                 # 核燃烧时间
-    tscls = np.zeros((1, 21)).flatten()    # 到达不同阶段的时标
-    lums = np.zeros((1, 11)).flatten()     # 特征光度
-    GB = np.zeros((1, 11)).flatten()       # 巨星分支参数
+    # tm = 0                                 # 主序时间
+    # tn = 0                                 # 核燃烧时间
+    # tscls = np.zeros((1, 21)).flatten()    # 到达不同阶段的时标
+    # lums = np.zeros((1, 11)).flatten()     # 特征光度
+    # GB = np.zeros((1, 11)).flatten()       # 巨星分支参数
 
-    if mass > 100:
+    if self.mass > 100:
         raise ValueError('mass exceeded')
 
-    if 7 <= kw <= 9:
+    if 7 <= self.type <= 9:
         # 估算 He 星的主序时间
-        tm = themsf(mass)
-        tscls[1] = tm
+        tm = self.themsf()
+        self.tscls[1] = tm
         # He 星在零龄主序和主序末尾的光度
         lums[1] = lzhef(mass)
         lums[2] = lums[1] * (1 + 0.45 + max(0.0, 0.85 - 0.08 * mass))
@@ -65,7 +62,7 @@ def star(self, zcnsts):
         # Change in slope of giant L-Mc relation
         lums[6] = GB[4] * GB[7] ** GB[5]
         # 设置 He 星的 GB 时标(下面的mc1表示HeMS末尾的核质量)
-        mc1 = self.lum_to_mc_gb(lums[2])
+        mc1 = lum_to_mc_gb(lums[2], GB, lums[6])
         tscls[4] = tm + (1 / ((GB[5] - 1) * GB[8] * GB[4])) * mc1 ** (1 - GB[5])
         tscls[6] = tscls[4] - (tscls[4] - tm) * ((GB[7] / mc1) ** (1 - GB[5]))
         tscls[5] = tscls[6] + (1 / ((GB[6] - 1) * GB[8] * GB[3])) * GB[7] ** (1 - GB[6])
@@ -142,7 +139,7 @@ def star(self, zcnsts):
             tscls[2] = tscls[5] - (1 / ((GB[6] - 1) * GB[1] * GB[3])) * ((GB[3] / lums[4]) ** ((GB[6] - 1) / GB[6]))
         # 小质量恒星
         if mass <= zcnsts.zpars[2]:
-            mc1 = self.lum_to_mc_gb(lums[4])
+            mc1 = lum_to_mc_gb(lums[4], GB, lums[6])
             lums[5] = lzahbf(mass, mc1, zcnsts.zpars[2], zcnsts)
             tscls[3] = tHef(mass, mc1, zcnsts.zpars[2], zcnsts)
         # 中等质量恒星
@@ -163,7 +160,7 @@ def star(self, zcnsts):
 
     # 设置巨星分支底部的核质量
     if mass <= zcnsts.zpars[2]:
-        GB[9] = self.lum_to_mc_gb(lums[3])
+        GB[9] = lum_to_mc_gb(lums[3], GB, lums[6])
     elif mass <= zcnsts.zpars[3]:
         GB[9] = mcheif(mass, zcnsts.zpars[2], zcnsts.zpars[9], zcnsts)
     else:
@@ -246,8 +243,8 @@ def star(self, zcnsts):
                     tn = tscls[2] + tscls[3] * ((mt - mc1) / (mcbagb - mc1))
             # 小质量恒星
             elif mass <= zcnsts.zpars[2]:
-                mc1 = self.lum_to_mc_gb(lums[3])
-                mc2 = self.lum_to_mc_gb(lums[4])
+                mc1 = lum_to_mc_gb(lums[3], GB, lums[6])
+                mc2 = lum_to_mc_gb(lums[4], GB, lums[6])
                 if mt <= mc1:
                     tn = tscls[1]
                 elif mt <= mc2:
