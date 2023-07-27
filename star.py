@@ -4,7 +4,6 @@ from const import mch
 from utils import conditional_njit
 import numpy as np
 
-
 # 用途: 推导不同演化阶段的时标、标志性光度、巨星分支参数
 
 # Computes the characteristic luminosities at different stages (lums), and various timescales (tscls).
@@ -33,23 +32,23 @@ import numpy as np
 #       ------------------------------------------------------------
 
 @conditional_njit()
-def star(kw, mass, mt, zcnsts):
+def star(self):
     # 输入 kw, mass, mt, zcnsts
 
     # 输出参数
-    tm = 0                                 # 主序时间
-    tn = 0                                 # 核燃烧时间
-    tscls = np.zeros((1, 21)).flatten()    # 到达不同阶段的时标
-    lums = np.zeros((1, 11)).flatten()     # 特征光度
-    GB = np.zeros((1, 11)).flatten()       # 巨星分支参数
+    # tm = 0                                 # 主序时间
+    # tn = 0                                 # 核燃烧时间
+    # tscls = np.zeros((1, 21)).flatten()    # 到达不同阶段的时标
+    # lums = np.zeros((1, 11)).flatten()     # 特征光度
+    # GB = np.zeros((1, 11)).flatten()       # 巨星分支参数
 
-    if mass > 100:
+    if self.mass > 100:
         raise ValueError('mass exceeded')
 
-    if 7 <= kw <= 9:
+    if 7 <= self.type <= 9:
         # 估算 He 星的主序时间
-        tm = themsf(mass)
-        tscls[1] = tm
+        tm = self.themsf()
+        self.tscls[1] = tm
         # He 星在零龄主序和主序末尾的光度
         lums[1] = lzhef(mass)
         lums[2] = lums[1] * (1 + 0.45 + max(0.0, 0.85 - 0.08 * mass))
