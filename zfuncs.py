@@ -25,23 +25,6 @@ def rgbdf(m, lum, x):
     return rgbd
 
 
-# 估算渐近巨星分支上的半径
-# [已校验] Hurley_2000: equation 5.4(74)
-@conditional_njit()
-def ragbf(m, lum, mhef, x):
-    m1 = mhef - 0.2
-    if m <= m1:
-        b50 = x.gbp[19]
-        A = x.gbp[29] + x.gbp[30] * m
-    elif m >= mhef:
-        b50 = x.gbp[19] * x.gbp[24]
-        A = min(x.gbp[25] / m ** x.gbp[26], x.gbp[27] / m ** x.gbp[28])
-    else:
-        b50 = x.gbp[19] * (1 + (x.gbp[24] - 1) * (m - m1) / 0.2)
-        A = x.gbp[31] + (x.gbp[32] - x.gbp[31]) * (m - m1) / 0.2
-    ragb = A * (lum ** x.gbp[18] + x.gbp[17] * lum ** b50)
-    return ragb
-
 
 # A function to evaluate radius derivitive on the AGB (as f(L)).
 @conditional_njit()

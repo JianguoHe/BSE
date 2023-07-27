@@ -2,7 +2,7 @@ import numpy as np
 from zdata import zdata
 from utils import conditional_njit
 from star import star
-from zfuncs import lbagbf, rminf, lum_to_mc_gb, lHeIf, ragbf, lzahbf, rgbf, lHef, tHef, rtmsf
+# from zfuncs import lbagbf, rminf, lum_to_mc_gb, lHeIf, ragbf, lzahbf, rgbf, lHef, tHef, rtmsf
 
 
 # 设置所有与金属丰度z有关的公式中的常数（其他地方不再依赖于z）
@@ -150,8 +150,8 @@ def zcnsts_set(self):
     self.msp[61] = xr[37] + lzs * (xr[38] + lzs * (xr[39] + lzs * xr[40]))
     self.msp[62] = max(0.097 - 0.1072 * (lz + 3), max(0.097, min(0.1461, 0.1461 + 0.1237 * (lz + 2))))
     self.msp[62] = 10 ** self.msp[62]
-    self.msp[63] = rtmsf(self.msp[62], self)
-    self.msp[64] = rtmsf(self.msp[62] + 0.1, self)
+    self.msp[63] = self.rtmsf(self.msp[62])
+    self.msp[64] = self.rtmsf(self.msp[62] + 0.1)
 
     # Ralpha
     self.msp[65] = xr[41] + lzs * (xr[42] + lzs * (xr[43] + lzs * xr[44]))
@@ -348,20 +348,20 @@ def zcnsts_set(self):
 
     # finish Lbagb
     mhefl = 0
-    lx = lbagbf(self.zpars[2], mhefl, x)
+    lx = self.lbagbf(self.zpars[2])
     self.gbp[16] = lx
 
     # finish LHeI
     dum1 = 0
-    lhefl = lHeIf(self.zpars[2], mhefl, x)
+    lhefl = self.lHeIf(self.zpars[2])
     self.gbp[41] = (self.gbp[38] * self.zpars[2] ** self.gbp[39] - lhefl) / (np.exp(self.zpars[2] * self.gbp[40]) * lhefl)
 
     # finish THe
-    thefl = tHef(self.zpars[2], dum1, mhefl, x) * (self.zpars[2])
+    thefl = self.tHef(self.zpars[2], dum1, mhefl) * (self.zpars[2])
     self.gbp[57] = (thefl - self.gbp[54]) / (self.gbp[54] * np.exp(self.gbp[56] * self.zpars[2]))
 
     # finish Tblf
-    rb = ragbf(self.zpars[3], lHeIf(self.zpars[3], self.zpars[2], x), mhefl, x)
+    rb = ragbf(self.zpars[3], self.lHeIf(self.zpars[3]), mhefl, x)
     rr = 1 - rminf(self.zpars[3], x) / rb
     rr = max(rr, 1.0e-12)
     self.gbp[66] = self.gbp[66] / (self.zpars[3] ** self.gbp[67] * rr ** self.gbp[68])

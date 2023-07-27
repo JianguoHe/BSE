@@ -373,16 +373,19 @@ class SingleStar:
     # A function to evaluate the radius at the end of the MS
     # Note that a safety check is added to ensure Rtms > Rzams when extrapolating the function to low masses. (JH 24/11/97)
     # [已校验] Hurley_2000: equation 5.1(9)
-    def rtmsf(self):
-        if self.mass0 <= self.msp[62]:
-            rtms = (self.msp[52] + self.msp[53] * self.mass0 ** self.msp[55]) / (self.msp[54] + self.mass0 ** self.msp[56])
+    def rtmsf(self, m=0):
+        mass = self.mass0 if m == 0 else m
+
+        if mass <= self.msp[62]:
+            rtms = (self.msp[52] + self.msp[53] * mass ** self.msp[55]) / (self.msp[54] + mass** self.msp[56])
             # extrapolated to low mass(M < 0.5)
             rtms = max(rtms, 1.5 * self.rzamsf())
-        elif self.mass0 >= self.msp[62] + 0.1:
-            rtms = (self.msp[57] * self.mass0 ** 3 + self.msp[58] * self.mass0 ** self.msp[61] + self.msp[59] * self.mass0 ** (self.msp[61] + 1.5)) / (
-                    self.msp[60] + self.mass0 ** 5)
+        elif mass >= self.msp[62] + 0.1:
+            rtms = (self.msp[57] * mass ** 3 + self.msp[58] * mass ** self.msp[61] + self.msp[59] * mass ** (self.msp[61] + 1.5)) / (
+                    self.msp[60] + mass ** 5)
         else:
-            rtms = self.msp[63] + ((self.mass0 - self.msp[62]) / 0.1) * (self.msp[64] - self.msp[63])
+            rtms = self.msp[63] + ((mass - self.msp[62]) / 0.1) * (self.msp[64] - self.msp[63])
+
         return rtms
 
     # 估算半径 alpha 系数
@@ -510,22 +513,28 @@ class SingleStar:
     # A function to evaluate the BAGB luminosity. (OP 21/04/98)
     # Continuity between LM and IM functions is ensured by setting gbp(16) = lbagbf(mhefl,0.0) with gbp(16) = 1.0.
     # [已校验] Hurley_2000: equation 5.3(56) 第三行有出入
-    def lbagbf(self):
-        a4 = (self.gbp[9] * self.zpars[2] ** self.gbp[10] - self.gbp[16]) / (np.exp(self.zpars[2] * self.gbp[11]) * self.gbp[16])
+    def lbagbf(self, m=0):
+        a4 = (self.gbp[9] * self.zpars[2] ** self.gbp[10] - self.gbp[16]) / (
+                    np.exp(self.zpars[2] * self.gbp[11]) * self.gbp[16])
         if self.mass0 < self.zpars[2]:
             lbagb = self.gbp[9] * self.mass0 ** self.gbp[10] / (1 + a4 * np.exp(self.mass0 * self.gbp[11]))
         else:
-            lbagb = (self.gbp[12] + self.gbp[13] * self.mass0 ** (self.gbp[15] + 1.8)) / (self.gbp[14] + self.mass0 ** self.gbp[15])
+            lbagb = (self.gbp[12] + self.gbp[13] * self.mass0 ** (self.gbp[15] + 1.8)) / (
+                        self.gbp[14] + self.mass0 ** self.gbp[15])
+        if m > 0:
+            lbagb = (self.gbp[12] + self.gbp[13] * m ** (self.gbp[15] + 1.8)) / (self.gbp[14] + m ** self.gbp[15])
         return lbagb
 
     # A function to evaluate He-ignition luminosity  (OP 24/11/97)
     # Continuity between the LM and IM functions is ensured with a first call setting lhefl = lHeIf(mhefl,0.0)
     # [已校验] Hurley_2000: equation 5.3(49) 第二行有出入
-    def lHeIf(self):
+    def lHeIf(self, m=0):
         if self.mass0 < self.zpars[2]:
             lHeI = self.gbp[38] * self.mass0 ** self.gbp[39] / (1 + self.gbp[41] * np.exp(self.mass0 * self.gbp[40]))
         else:
             lHeI = (self.gbp[42] + self.gbp[43] * self.mass0 ** 3.8) / (self.gbp[44] + self.mass0 ** 2)
+        if m > 0:
+            lHeI = (self.gbp[42] + self.gbp[43] * m ** 3.8) / (self.gbp[44] + m ** 2)
         return lHeI
 
     # A function to evaluate the ratio LHe,min/LHeI  (OP 20/11/97)
@@ -582,6 +591,22 @@ class SingleStar:
         mcagb = (self.gbp[37] + self.gbp[35] * m ** self.gbp[36]) ** (1 / 4)
         return mcagb
 
+    # 估算渐近巨星分支上的半径
+    # [已校验] Hurley_2000: equation 5.4(74)
+    def ragbf(self, m, lum, mhef):
+        m1 = mhef - 0.2
+        if m <= m1:
+            b50 = self.gbp[19]
+            A = self.gbp[29] + self.gbp[30] * m
+        elif m >= mhef:
+            b50 = self.gbp[19] * self.gbp[24]
+            A = min(self.gbp[25] / m ** self.gbp[26], self.gbp[27] / m ** self.gbp[28])
+        else:
+            b50 = self.gbp[19] * (1 + (self.gbp[24] - 1) * (m - m1) / 0.2)
+            A = self.gbp[31] + (self.gbp[32] - self.gbp[31]) * (m - m1) / 0.2
+        ragb = A * (lum ** self.gbp[18] + self.gbp[17] * lum ** b50)
+        return ragb
+
     # A function to evaluate core mass at BGB or He ignition (depending on mchefl) for IM & HM stars
     # [已校验] Hurley_2000: equation 5.2(44)
     def mcheif(self, m, mhefl, mchefl):
@@ -592,9 +617,11 @@ class SingleStar:
 
     # A function to evaluate Mc given t for GB, AGB and NHe stars
     # [已校验] Hurley_2000: equation 5.2(34、39)
-    def mcgbtf(self, t, A, tinf1, tinf2, tx):
+    def mcgbtf(self, t, A, GB, tinf1, tinf2, tx):
         if t <= tx:
-            mcgbt = ((self.GB[5] - 1) * A * self.GB[4] * (tinf1 - t)) ** (1 / (1 - self.GB[5]))
+            mcgbt = ((GB[5] - 1) * A * GB[4] * (tinf1 - t)) ** (1 / (1 - GB[5]))
         else:
-            mcgbt = ((self.GB[6] - 1) * A * self.GB[3] * (tinf2 - t)) ** (1 / (1 - self.GB[6]))
+            mcgbt = ((GB[6] - 1) * A * GB[3] * (tinf2 - t)) ** (1 / (1 - GB[6]))
         return mcgbt
+
+
