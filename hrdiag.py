@@ -43,7 +43,7 @@ def hrdiag(kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, kick, 
     if kw <= 6:
         tbagb = tscls[2] + tscls[3]
         rzams = rzamsf(mass, zcnsts)
-        rtms = rtmsf(mass, zcnsts)
+        rtms = self.rtmsf()
 
         # 主序和赫氏空隙两个阶段
         if aj < tscls[1]:
@@ -588,7 +588,7 @@ def hrdiag(kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, kick, 
 
     # Calculate mass and radius of convective envelope, and envelope gyration radius.
     if kw <= 9:
-        rtms = rtmsf(mass, zcnsts)   # 【疑问】这里的rtms公式是否对氦星适用
+        rtms = self.rtmsf()   # 【疑问】这里的rtms公式是否对氦星适用
         rzams = rzamsf(mass, zcnsts) if kw <= 6 else rzhef(mass)
         (menv, renv, k2) = mrenv(kw, mass, mt, mc, lum, r, rc, aj, tm, lums[2], lums[3], lums[4], rzams, rtms, rg, k2)
     else:
