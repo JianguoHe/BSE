@@ -2,6 +2,7 @@ import numpy as np
 from zdata import zdata
 from utils import conditional_njit
 from star import star
+from SingleStar import SingleStar
 # from zfuncs import lbagbf, rminf, lum_to_mc_gb, lHeIf, ragbf, lzahbf, rgbf, lHef, tHef, rtmsf
 
 
@@ -361,25 +362,27 @@ def zcnsts_set(self):
     self.gbp[57] = (thefl - self.gbp[54]) / (self.gbp[54] * np.exp(self.gbp[56] * self.zpars[2]))
 
     # finish Tblf
-    rb = ragbf(self.zpars[3], self.lHeIf(self.zpars[3]), mhefl, x)
-    rr = 1 - rminf(self.zpars[3], x) / rb
+    rb = self.ragbf(self.zpars[3], self.lHeIf(self.zpars[3]), mhefl)
+    rr = 1 - self.rminf(self.zpars[3]) / rb
     rr = max(rr, 1.0e-12)
     self.gbp[66] = self.gbp[66] / (self.zpars[3] ** self.gbp[67] * rr ** self.gbp[68])
 
     # finish Lzahb
-    self.gbp[74] = lhefl * lHef(self.zpars[2], x)
+    self.gbp[74] = lhefl * self.lHef(self.zpars[2])
 
-    kw = 1
-    (tm, tn, tscls, lums, GB) = star(kw, self.zpars[2], self.zpars[2], x)
+    star_temp = SingleStar(type=1, mass=self.zpars[2], Z=0.02)
+    star(star_temp)
+    # kw = 1
+    # (tm, tn, tscls, lums, GB) = star(kw, self.zpars[2], self.zpars[2], x)
 
     # 这里zpars[9]和zpars[10]分别算的是质量为M_HeF的恒星在BGB和HeI时的核质量
-    self.zpars[9] = self.lum_to_mc_gb(lums[3])
-    self.zpars[10] = self.lum_to_mc_gb(lums[4])
+    self.zpars[9] = self.lum_to_mc_gb(star_temp.lums[3])
+    self.zpars[10] = self.lum_to_mc_gb(star_temp.lums[4])
     # set the hydrogen and helium abundances
     self.zpars[11] = 0.76 - 3 * z
     self.zpars[12] = 0.24 + 2 * z
     # set constant for low-mass CHeB stars
-    self.zpars[13] = rminf(self.zpars[2], x) / rgbf(self.zpars[2], lzahbf(self.zpars[2], self.zpars[9], self.zpars[2], x), x)
+    self.zpars[13] = self.rminf(self.zpars[2]) / self.rgbf(self.zpars[2], self.lzahbf(self.zpars[2], self.zpars[9], self.zpars[2]))
     #
     self.zpars[14] = z ** 0.4
 

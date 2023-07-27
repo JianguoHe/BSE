@@ -150,7 +150,6 @@ print("compute_sum elapsed time: ", end - start)
 # # print(zcnsts.gbp)
 # m = np.logspace(-1, 1.5, 100)
 # # lum = np.logspace(0, 4, num=100)
-# # r = rgbf(m, lum, zcnsts)
 # lhei = m.copy()
 # lbgb = lbgbf(m, zcnsts)
 # for i in range(len(m)):

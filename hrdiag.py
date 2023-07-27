@@ -34,7 +34,7 @@ from zfuncs import rpert1f, mctmsf, mcgbtf, lum_to_mc_gb, mcheif, mcagbf
 
 
 @conditional_njit()
-def hrdiag(kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, kick, zcnsts):
+def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, kick, zcnsts):
     # 设置常数
     mlp = 12.0
     ahe = 4            # 产能效率
@@ -126,7 +126,7 @@ def hrdiag(kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, kick, 
                     # 大质量的 HG 末尾在 He 点燃时(at Rmin)
                     else:
                         # 首先算一下 blue loop 阶段的最小半径
-                        rmin = rminf(mass, zcnsts)
+                        rmin = self.rminf(mass)
                         # 然后算一下 He 点燃时的半径
                         ry = ragbf(mt, lums[4], zcnsts.zpars[2], zcnsts)
                         rx = min(rmin, ry)
@@ -210,7 +210,7 @@ def hrdiag(kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, kick, 
             elif mass > zcnsts.zpars[3]:
                 tau2 = tblf(mass, zcnsts.zpars[2], zcnsts.zpars[3], zcnsts)
                 tloop = tscls[2] + tau2 * tscls[3]
-                rmin = rminf(mass, zcnsts)
+                rmin = self.rminf(mass)
                 rg = rgbf(mt, lums[4], zcnsts)
                 rx = ragbf(mt, lums[4], zcnsts.zpars[2], zcnsts)
                 rmin = min(rmin, rx)
@@ -252,7 +252,7 @@ def hrdiag(kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, kick, 
                     lx = lums[5]
                     ly = lums[7]
                     rx = rgbf(mt, lx, zcnsts)
-                    rmin = rminf(mt, zcnsts)
+                    rmin = self.rminf(mt)
                     texp = min(max(0.40, rmin / rx), 2.50)
                     ry = ragbf(mt, ly, zcnsts.zpars[2], zcnsts)
                     if rmin < rx:
@@ -377,7 +377,7 @@ def hrdiag(kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, kick, 
     if 7 <= kw <= 9:
         # print(kw, mass, mt, mc)
         lzams = lzhef(mass)
-        rzams = rzhef(mt)
+        rzams = self.rzhef(mt)
         # Main Sequence
         if aj < tm:
             kw = 7
@@ -521,7 +521,7 @@ def hrdiag(kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, kick, 
         # 非简并的氦核
         if mass > zcnsts.zpars[2]:
             lc = lzhef(mc)
-            rc = rzhef(mc)
+            rc = self.rzhef(mc)
         # 简并氦核
         else:
             if wdflag:
@@ -537,7 +537,7 @@ def hrdiag(kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, kick, 
         kw_temp = 7
         (tm, tn, tscls, lums, GB) = star(kw_temp, mc, mc, zcnsts)
         lc = lums[1] * (1.0 + 0.45 * tau + max(0.0, 0.85 - 0.08 * mc) * tau ** 2)
-        rc = rzhef(mc) * (1.0 + max(0.0, 0.4 - 0.22 * np.log10(mc)) * (tau - tau ** 6))
+        rc = self.rzhef(mc) * (1.0 + max(0.0, 0.4 - 0.22 * np.log10(mc)) * (tau - tau ** 6))
         # 恢复恒星本身类型对应的特征光度/时标
         (tm, tn, tscls, lums, GB) = star(kw, mass, mt, zcnsts)
     # EAGB 阶段
@@ -551,7 +551,7 @@ def hrdiag(kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, kick, 
         lc = mc_to_lum_gb(mc_CO, GB)
         if tau < 1.0:
             lc = lums[2] * (lc / lums[2]) ** tau
-        rc = rzhef(mc)
+        rc = self.rzhef(mc)
         rc = min(rhehgf(mc, lc, rc, lums[2]), rhegbf(lc))
         # 恢复恒星本身类型对应的特征光度/时标
         (tm, tn, tscls, lums, GB) = star(kw, mass, mt, zcnsts)
@@ -589,7 +589,7 @@ def hrdiag(kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, kick, 
     # Calculate mass and radius of convective envelope, and envelope gyration radius.
     if kw <= 9:
         rtms = self.rtmsf()   # 【疑问】这里的rtms公式是否对氦星适用
-        rzams = rzamsf(mass, zcnsts) if kw <= 6 else rzhef(mass)
+        rzams = rzamsf(mass, zcnsts) if kw <= 6 else self.rzhef(mass)
         (menv, renv, k2) = mrenv(kw, mass, mt, mc, lum, r, rc, aj, tm, lums[2], lums[3], lums[4], rzams, rtms, rg, k2)
     else:
         menv = 1.0e-10

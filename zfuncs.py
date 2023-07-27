@@ -8,13 +8,6 @@ import astropy.coordinates.sky_coordinate as skycoord
 # 集合了所有的独立函数（公式）
 
 
-# 估算巨星分支上的半径
-# [已校验] Hurley_2000: equation 5.2(46)
-@conditional_njit()
-def rgbf(self, lum):
-    a = min(x.gbp[20] / m ** x.gbp[21], x.gbp[22] / m ** x.gbp[23])
-    rgb = a * (lum ** x.gbp[18] + x.gbp[17] * lum ** x.gbp[19])
-    return rgb
 
 
 # A function to evaluate radius derivitive on the GB (as f(L)).
@@ -89,13 +82,6 @@ def lgbtf(t, A , GB, tinf1, tinf2, tx):
 
 
 
-# A function to evaluate the minimum radius during blue loop(He-burning) for IM & HM stars
-# [已校验] Hurley_2000: equation 5.3(55)
-@conditional_njit()
-def rminf(m, x):
-    rmin = (x.gbp[49] * m + (x.gbp[50] * m) ** x.gbp[52] * m ** x.gbp[53]) / (x.gbp[51] + m ** x.gbp[53])
-    return rmin
-
 
 # A function to evaluate the blue-loop fraction of the He-burning lifetime for IM & HM stars  (OP 28/01/98)
 # [已校验] Hurley_2000: equation 5.3(58) 有些不太一样
@@ -116,28 +102,12 @@ def tblf(m, mhefl, mfgb,x):
         tbl = 0
     return tbl
 
-# 估算低质量恒星的零龄水平分支(ZAHB)半径
-# Continuity with R(LHe,min) for IM stars is ensured by setting lx = lHeif(mhefl,z,0.0,1.0)*lHef(mhefl,z,mfgb),
-# and the call to rzhef ensures continuity between the ZAHB and the NHe-ZAMS as Menv -> 0.
-# [已校验] Hurley_2000: equation 5.3(54)
-@conditional_njit()
-def rzahbf(m, mc, mhefl, x):
-    rx = rzhef(mc)
-    ry = rgbf(m, lzahbf(m, mc, mhefl, x), x)
-    mm = max((m - mc) / (mhefl - mc), 1e-12)
-    f = (1 + x.gbp[76]) * mm ** x.gbp[75] / (1 + x.gbp[76] * mm ** x.gbp[77])
-    rzahb = (1 - f) * rx + f * ry
-    return rzahb
 
 
 
 
-# 估算 He 星零龄主序的半径
-# [已校验] Hurley_2000: equation 6.1(78)
-@conditional_njit()
-def rzhef(m):
-    rzhe = 0.2391 * m ** 4.6 / (m ** 4 + 0.162 * m ** 3 + 0.0065)
-    return rzhe
+
+
 
 # 估算 He 星主序上的光度
 # [已校验] Hurley_2000: equation 6.1(78)

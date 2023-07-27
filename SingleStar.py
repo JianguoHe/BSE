@@ -540,8 +540,9 @@ class SingleStar:
     # A function to evaluate the ratio LHe,min/LHeI  (OP 20/11/97)
     # Note that this function is everywhere <= 1, and is only valid for IM stars
     # [已校验] Hurley_2000: equation 5.3(51)\
-    def lHef(self):
-        lHe = (self.gbp[45] + self.gbp[46] * self.mass0 ** (self.gbp[48] + 0.1)) / (self.gbp[47] + self.mass0 ** self.gbp[48])
+    def lHef(self, m=0):
+        mass = self.mass0 if m == 0 else m
+        lHe = (self.gbp[45] + self.gbp[46] * mass ** (self.gbp[48] + 0.1)) / (self.gbp[47] + mass ** self.gbp[48])
         return lHe
 
     # 通过 Mc 估算 GB, AGB and Naked He stars 的光度
@@ -624,4 +625,33 @@ class SingleStar:
             mcgbt = ((GB[6] - 1) * A * GB[3] * (tinf2 - t)) ** (1 / (1 - GB[6]))
         return mcgbt
 
+    # A function to evaluate the minimum radius during blue loop(He-burning) for IM & HM stars
+    # [已校验] Hurley_2000: equation 5.3(55)
+    def rminf(self, m):
+        rmin = (self.gbp[49] * m + (self.gbp[50] * m) ** self.gbp[52] * m ** self.gbp[53]) / (self.gbp[51] + m ** self.gbp[53])
+        return rmin
 
+    # 估算巨星分支上的半径
+    # [已校验] Hurley_2000: equation 5.2(46)
+    def rgbf(self, m, lum):
+        a = min(self.gbp[20] / m ** self.gbp[21], self.gbp[22] / m ** self.gbp[23])
+        rgb = a * (lum ** self.gbp[18] + self.gbp[17] * lum ** self.gbp[19])
+        return rgb
+
+    # 估算低质量恒星的零龄水平分支(ZAHB)半径
+    # Continuity with R(LHe,min) for IM stars is ensured by setting lx = lHeif(mhefl,z,0.0,1.0)*lHef(mhefl,z,mfgb),
+    # and the call to rzhef ensures continuity between the ZAHB and the NHe-ZAMS as Menv -> 0.
+    # [已校验] Hurley_2000: equation 5.3(54)
+    def rzahbf(self, m, mc, mhefl):
+        rx = self.rzhef(mc)
+        ry = self.rgbf(m, self.lzahbf(m, mc, mhefl))
+        mm = max((m - mc) / (mhefl - mc), 1e-12)
+        f = (1 + self.gbp[76]) * mm ** self.gbp[75] / (1 + self.gbp[76] * mm ** self.gbp[77])
+        rzahb = (1 - f) * rx + f * ry
+        return rzahb
+
+    # 估算 He 星零龄主序的半径
+    # [已校验] Hurley_2000: equation 6.1(78)
+    def rzhef(self, m):
+        rzhe = 0.2391 * m ** 4.6 / (m ** 4 + 0.162 * m ** 3 + 0.0065)
+        return rzhe
