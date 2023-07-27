@@ -592,9 +592,9 @@ class SingleStar:
 
     # A function to evaluate Mc given t for GB, AGB and NHe stars
     # [已校验] Hurley_2000: equation 5.2(34、39)
-    def mcgbtf(self, t, A, tinf1, tinf2, tx):
+    def mcgbtf(self, t, A, GB, tinf1, tinf2, tx):
         if t <= tx:
-            mcgbt = ((self.GB[5] - 1) * A * self.GB[4] * (tinf1 - t)) ** (1 / (1 - self.GB[5]))
+            mcgbt = ((GB[5] - 1) * A * GB[4] * (tinf1 - t)) ** (1 / (1 - GB[5]))
         else:
-            mcgbt = ((self.GB[6] - 1) * A * self.GB[3] * (tinf2 - t)) ** (1 / (1 - self.GB[6]))
+            mcgbt = ((GB[6] - 1) * A * GB[3] * (tinf2 - t)) ** (1 / (1 - GB[6]))
         return mcgbt

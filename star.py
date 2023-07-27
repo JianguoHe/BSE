@@ -1,5 +1,5 @@
-from zfuncs import lzamsf, lzahbf, lzhef, ltmsf, lbgbf, lHeIf, lHef, lbagbf, mc_to_lum_gb
-from zfuncs import tbgbf, thook_div_tBGB, tHef, themsf, lum_to_mc_gb, mcagbf, mcheif, mcgbtf
+# from zfuncs import lzamsf, lzahbf, lzhef, ltmsf, lbgbf, lHeIf, lHef, lbagbf, mc_to_lum_gb
+# from zfuncs import tbgbf, thook_div_tBGB, tHef, themsf, lum_to_mc_gb, mcagbf, mcheif, mcgbtf
 from const import mch
 from utils import conditional_njit
 import numpy as np
@@ -30,7 +30,7 @@ import numpy as np
 #               7: Mx                8: A(He)               9: Mc,BGB
 #
 #       ------------------------------------------------------------
-
+# 输出 tm, tn, self.tscls, lums, GB
 @conditional_njit()
 def star(self):
     # 输入 kw, mass, mt, zcnsts
@@ -38,7 +38,7 @@ def star(self):
     # 输出参数
     # tm = 0                                 # 主序时间
     # tn = 0                                 # 核燃烧时间
-    # tscls = np.zeros((1, 21)).flatten()    # 到达不同阶段的时标
+    # self.tscls = np.zeros((1, 21)).flatten()    # 到达不同阶段的时标
     # lums = np.zeros((1, 11)).flatten()     # 特征光度
     # GB = np.zeros((1, 11)).flatten()       # 巨星分支参数
 
@@ -47,174 +47,174 @@ def star(self):
 
     if 7 <= self.type <= 9:
         # 估算 He 星的主序时间
-        tm = self.themsf()
-        self.tscls[1] = tm
+        self.tm = self.themsf()
+        self.tscls[1] = self.tm
         # He 星在零龄主序和主序末尾的光度
-        lums[1] = lzhef(mass)
-        lums[2] = lums[1] * (1 + 0.45 + max(0.0, 0.85 - 0.08 * mass))
+        self.lums[1] = self.lzhef()
+        self.lums[2] = self.lums[1] * (1 + 0.45 + max(0.0, 0.85 - 0.08 * self.mass))
         # 设置 He 星 GB 参数
-        GB[8] = 8.0e-5
-        GB[3] = 4.1e4
-        GB[4] = 5.5e4 / (1 + 0.4 * mass ** 4)
-        GB[5] = 5
-        GB[6] = 3
-        GB[7] = (GB[3] / GB[4]) ** (1 / (GB[5] - GB[6]))
+        self.GB[8] = 8.0e-5
+        self.GB[3] = 4.1e4
+        self.GB[4] = 5.5e4 / (1 + 0.4 * self.mass ** 4)
+        self.GB[5] = 5
+        self.GB[6] = 3
+        self.GB[7] = (self.GB[3] / self.GB[4]) ** (1 / (self.GB[5] - self.GB[6]))
         # Change in slope of giant L-Mc relation
-        lums[6] = GB[4] * GB[7] ** GB[5]
+        self.lums[6] = self.GB[4] * self.GB[7] ** self.GB[5]
         # 设置 He 星的 GB 时标(下面的mc1表示HeMS末尾的核质量)
-        mc1 = lum_to_mc_gb(lums[2], GB, lums[6])
-        tscls[4] = tm + (1 / ((GB[5] - 1) * GB[8] * GB[4])) * mc1 ** (1 - GB[5])
-        tscls[6] = tscls[4] - (tscls[4] - tm) * ((GB[7] / mc1) ** (1 - GB[5]))
-        tscls[5] = tscls[6] + (1 / ((GB[6] - 1) * GB[8] * GB[3])) * GB[7] ** (1 - GB[6])
+        mc1 = lum_to_mc_gb(self.lums[2], self.GB, self.lums[6])
+        self.tscls[4] = self.tm + (1 / ((self.GB[5] - 1) * self.GB[8] * self.GB[4])) * mc1 ** (1 - self.GB[5])
+        self.tscls[6] = self.tscls[4] - (self.tscls[4] - self.tm) * ((self.GB[7] / mc1) ** (1 - self.GB[5]))
+        self.tscls[5] = self.tscls[6] + (1 / ((self.GB[6] - 1) * self.GB[8] * self.GB[3])) * self.GB[7] ** (1 - self.GB[6])
         # 确定氦巨星 CO 核质量达到最大值的时标
-        mcmax = min(mt, 1.45 * mt - 0.31)
+        mcmax = min(self.mt, 1.45 * self.mt - 0.31)
         if mcmax <= 0:
-            mcmax = mt
-        mcmax = min(mcmax, max(mch, 0.773 * mass - 0.35))
-        if mcmax <= GB[7]:
-            tscls[14] = tscls[4] - (1 / ((GB[5] - 1) * GB[8] * GB[4])) * (mcmax ** (1 - GB[5]))
+            mcmax = self.mt
+        mcmax = min(mcmax, max(mch, 0.773 * self.mass - 0.35))
+        if mcmax <= self.GB[7]:
+            self.tscls[14] = self.tscls[4] - (1 / ((self.GB[5] - 1) * self.GB[8] * self.GB[4])) * (mcmax ** (1 - self.GB[5]))
         else:
-            tscls[14] = tscls[5] - (1 / ((GB[6] - 1) * GB[8] * GB[3])) * (mcmax ** (1 - GB[6]))
-        tscls[14] = max(tscls[14], tm)
-        tn = tscls[14]
-        return tm, tn, tscls, lums, GB    # 结束此函数
+            self.tscls[14] = self.tscls[5] - (1 / ((self.GB[6] - 1) * self.GB[8] * self.GB[3])) * (mcmax ** (1 - self.GB[6]))
+        self.tscls[14] = max(self.tscls[14], self.tm)
+        self.tn = self.tscls[14]
+        return 0
 
-    if kw >= 10:
-        tm = 1e10
-        tscls[1] = tm
-        tn = 1e10
-        return tm, tn, tscls, lums, GB    # 结束此函数
+    if self.type >= 10:
+        self.tm = 1e10
+        self.tscls[1] = self.tm
+        self.tn = 1e10
+        return 0
 
     # 主序和 BGB 时间
-    tscls[1] = tbgbf(mass, zcnsts)
-    tm = max(zcnsts.zpars[8], thook_div_tBGB(mass, zcnsts)) * tscls[1]
+    self.tscls[1] = self.tbgbf()
+    self.tm = max(self.zcnsts.zpars[8], self.thook_div_tBGB()) * self.tscls[1]
     # 零龄主序和主序末尾的光度
-    lums[1] = lzamsf(mass, zcnsts)
-    lums[2] = ltmsf(mass, zcnsts)
+    self.lums[1] = self.lzamsf()
+    self.lums[2] = self.ltmsf()
     # 设置巨星分支参数 GB
-    GB[1] = 10 ** max(-4.8, min(-5.7 + 0.8 * mass, -4.1 + 0.14 * mass))
-    GB[2] = 1.27e-5
-    GB[8] = 8e-5
-    GB[3] = max(3e4, 500 + 1.75e4 * mass ** 0.6)
-    if mass <= zcnsts.zpars[2]:
-        GB[4] = zcnsts.zpars[6]
-        GB[5] = 6
-        GB[6] = 3
-    elif mass < 2.5:
-        # 这里用的是线性插值，很明显在 mass=2.5 处，GB[4] = 0.975 * zcnsts.zpars[6] - 0.18 * mass
-        dlogD = (0.975 * zcnsts.zpars[6] - 0.18 * 2.5) - zcnsts.zpars[6]
-        GB[4] = zcnsts.zpars[6] + dlogD * (mass - zcnsts.zpars[2]) / (2.5 - zcnsts.zpars[2])
-        GB[5] = 6 - (mass - zcnsts.zpars[2]) / (2.5 - zcnsts.zpars[2])
-        GB[6] = 3 - (mass - zcnsts.zpars[2]) / (2.5 - zcnsts.zpars[2])
+    self.GB[1] = 10 ** max(-4.8, min(-5.7 + 0.8 * self.mass, -4.1 + 0.14 * self.mass))
+    self.GB[2] = 1.27e-5
+    self.GB[8] = 8e-5
+    self.GB[3] = max(3e4, 500 + 1.75e4 * self.mass ** 0.6)
+    if self.mass <= self.zcnsts.zpars[2]:
+        self.GB[4] = self.zcnsts.zpars[6]
+        self.GB[5] = 6
+        self.GB[6] = 3
+    elif self.mass < 2.5:
+        # 这里用的是线性插值，很明显在 mass=2.5 处，self.GB[4] = 0.975 * zcnsts.zpars[6] - 0.18 * mass
+        dlogD = (0.975 * self.zcnsts.zpars[6] - 0.18 * 2.5) - self.zcnsts.zpars[6]
+        self.GB[4] = self.zcnsts.zpars[6] + dlogD * (self.mass - self.zcnsts.zpars[2]) / (2.5 - self.zcnsts.zpars[2])
+        self.GB[5] = 6 - (self.mass - self.zcnsts.zpars[2]) / (2.5 - self.zcnsts.zpars[2])
+        self.GB[6] = 3 - (self.mass - self.zcnsts.zpars[2]) / (2.5 - self.zcnsts.zpars[2])
     else:
-        GB[4] = max(-1, 0.975 * zcnsts.zpars[6] - 0.18 * mass, 0.5 * zcnsts.zpars[6] - 0.06 * mass)
-        GB[5] = 5
-        GB[6] = 2
-    GB[4] = 10 ** GB[4]
-    GB[7] = (GB[3] / GB[4]) ** (1 / (GB[5] - GB[6]))
+        self.GB[4] = max(-1, 0.975 * self.zcnsts.zpars[6] - 0.18 * self.mass, 0.5 * self.zcnsts.zpars[6] - 0.06 * self.mass)
+        self.GB[5] = 5
+        self.GB[6] = 2
+    self.GB[4] = 10 ** self.GB[4]
+    self.GB[7] = (self.GB[3] / self.GB[4]) ** (1 / (self.GB[5] - self.GB[6]))
     # Change in slope of giant L-Mc relation.
-    lums[6] = GB[4] * GB[7] ** GB[5]
+    self.lums[6] = self.GB[4] * self.GB[7] ** self.GB[5]
     # 氦点燃光度
-    lums[4] = lHeIf(mass, zcnsts.zpars[2], zcnsts)
-    lums[7] = lbagbf(mass, zcnsts.zpars[2], zcnsts)
-    if mass < 0.1 and kw <= 1:
-        tscls[2] = 1.1 * tscls[1]
-        tscls[3] = 0.1 * tscls[1]
-        lums[3] = lbgbf(mass, zcnsts)
+    self.lums[4] = self.lHeIf()
+    self.lums[7] = self.lbagbf()
+    if self.mass < 0.1 and self.type <= 1:
+        self.tscls[2] = 1.1 * self.tscls[1]
+        self.tscls[3] = 0.1 * self.tscls[1]
+        self.lums[3] = self.lbgbf()
         tn = 1e10
-        return tm, tn, tscls, lums, GB   # 结束此函数
+        return 0
 
     # 中小质量恒星, 会经历FGB阶段
-    if mass <= zcnsts.zpars[3]:
+    if self.mass <= self.zcnsts.zpars[3]:
         # 巨星分支底部的光度
-        lums[3] = lbgbf(mass, zcnsts)
+        self.lums[3] = self.lbgbf()
         # Set GB timescales
-        tscls[4] = tscls[1] + (1 / ((GB[5] - 1) * GB[1] * GB[4])) * ((GB[4] / lums[3]) ** ((GB[5] - 1) / GB[5]))
-        tscls[6] = tscls[4] - (tscls[4] - tscls[1]) * ((lums[3] / lums[6]) ** ((GB[5] - 1) / GB[5]))
-        tscls[5] = tscls[6] + (1 / ((GB[6] - 1) * GB[1] * GB[3])) * ((GB[3] / lums[6]) ** ((GB[6] - 1) / GB[6]))
+        self.tscls[4] = self.tscls[1] + (1 / ((self.GB[5] - 1) * self.GB[1] * self.GB[4])) * ((self.GB[4] / self.lums[3]) ** ((self.GB[5] - 1) / self.GB[5]))
+        self.tscls[6] = self.tscls[4] - (self.tscls[4] - self.tscls[1]) * ((self.lums[3] / self.lums[6]) ** ((self.GB[5] - 1) / self.GB[5]))
+        self.tscls[5] = self.tscls[6] + (1 / ((self.GB[6] - 1) * self.GB[1] * self.GB[3])) * ((self.GB[3] / self.lums[6]) ** ((self.GB[6] - 1) / self.GB[6]))
         # 设置氦点燃时间
-        if lums[4] <= lums[6]:
-            tscls[2] = tscls[4] - (1 / ((GB[5] - 1) * GB[1] * GB[4])) * ((GB[4] / lums[4]) ** ((GB[5] - 1) / GB[5]))
+        if self.lums[4] <= self.lums[6]:
+            self.tscls[2] = self.tscls[4] - (1 / ((self.GB[5] - 1) * self.GB[1] * self.GB[4])) * ((self.GB[4] / self.lums[4]) ** ((self.GB[5] - 1) / self.GB[5]))
         else:
-            tscls[2] = tscls[5] - (1 / ((GB[6] - 1) * GB[1] * GB[3])) * ((GB[3] / lums[4]) ** ((GB[6] - 1) / GB[6]))
+            self.tscls[2] = self.tscls[5] - (1 / ((self.GB[6] - 1) * self.GB[1] * self.GB[3])) * ((self.GB[3] / self.lums[4]) ** ((self.GB[6] - 1) / self.GB[6]))
         # 小质量恒星
-        if mass <= zcnsts.zpars[2]:
-            mc1 = lum_to_mc_gb(lums[4], GB, lums[6])
-            lums[5] = lzahbf(mass, mc1, zcnsts.zpars[2], zcnsts)
-            tscls[3] = tHef(mass, mc1, zcnsts.zpars[2], zcnsts)
+        if self.mass <= self.zcnsts.zpars[2]:
+            mc1 = self.lum_to_mc_gb(self.lums[4])
+            self.lums[5] = self.lzahbf(self.mass, mc1, self.zcnsts.zpars[2])
+            self.tscls[3] = self.tHef(self.mass, mc1, self.zcnsts.zpars[2])
         # 中等质量恒星
         else:
-            lums[5] = lHef(mass, zcnsts) * lums[4]
-            tscls[3] = tHef(mass, 1, zcnsts.zpars[2], zcnsts) * tscls[1]
+            self.lums[5] = self.lHef() * self.lums[4]
+            self.tscls[3] = self.tHef(self.mass, 1, self.zcnsts.zpars[2]) * self.tscls[1]
     # 大质量恒星
     else:
         # Note that for M > zpars[3] there is no GB as the star goes from HG -> CHeB -> AGB.
-        # So in effect tscls[1] refers to the time of Helium ignition and not the BGB.
-        tscls[2] = tscls[1]
+        # So in effect self.tscls[1] refers to the time of Helium ignition and not the BGB.
+        self.tscls[2] = self.tscls[1]
         # 这里由于是大质量恒星, 因此氦燃烧时间与核质量无关，可为任意值(此处为1)
-        tscls[3] = tHef(mass, 1, zcnsts.zpars[2], zcnsts) * tscls[1]
+        self.tscls[3] = self.tHef(self.mass, 1, self.zcnsts.zpars[2]) * self.tscls[1]
         # This now represents the luminosity at the end of CHeB, ie. BAGB
-        lums[5] = lums[7]   # 【疑问】为什么对于大质量恒星, 氦燃烧的光度等于BAGB的光度？
+        self.lums[5] = self.lums[7]   # 【疑问】为什么对于大质量恒星, 氦燃烧的光度等于BAGB的光度？
         # We set lums[3] to be the luminosity at the end of the HG
-        lums[3] = lums[4]
+        self.lums[3] = self.lums[4]
 
     # 设置巨星分支底部的核质量
-    if mass <= zcnsts.zpars[2]:
-        GB[9] = lum_to_mc_gb(lums[3], GB, lums[6])
-    elif mass <= zcnsts.zpars[3]:
-        GB[9] = mcheif(mass, zcnsts.zpars[2], zcnsts.zpars[9], zcnsts)
+    if self.mass <= self.zcnsts.zpars[2]:
+        self.GB[9] = self.lum_to_mc_gb(self.lums[3])
+    elif self.mass <= self.zcnsts.zpars[3]:
+        self.GB[9] = self.mcheif(self.mass, self.zcnsts.zpars[2], self.zcnsts.zpars[9])
     else:
-        GB[9] = mcheif(mass, zcnsts.zpars[2], zcnsts.zpars[10], zcnsts)
+        self.GB[9] = self.mcheif(self.mass, self.zcnsts.zpars[2], self.zcnsts.zpars[10])
 
     # EAGB 时标参数
-    tbagb = tscls[2] + tscls[3]
-    tscls[7] = tbagb + (1 / ((GB[5] - 1) * GB[8] * GB[4])) * ((GB[4] / lums[7]) ** ((GB[5] - 1) / GB[5]))
-    tscls[9] = tscls[7] - (tscls[7] - tbagb) * ((lums[7] / lums[6]) ** ((GB[5] - 1) / GB[5]))
-    tscls[8] = tscls[9] + (1 / ((GB[6] - 1) * GB[8] * GB[3])) * ((GB[3] / lums[6]) ** ((GB[6] - 1) / GB[6]))
+    tbagb = self.tscls[2] + self.tscls[3]
+    self.tscls[7] = tbagb + (1 / ((self.GB[5] - 1) * self.GB[8] * self.GB[4])) * ((self.GB[4] / self.lums[7]) ** ((self.GB[5] - 1) / self.GB[5]))
+    self.tscls[9] = self.tscls[7] - (self.tscls[7] - tbagb) * ((self.lums[7] / self.lums[6]) ** ((self.GB[5] - 1) / self.GB[5]))
+    self.tscls[8] = self.tscls[9] + (1 / ((self.GB[6] - 1) * self.GB[8] * self.GB[3])) * ((self.GB[3] / self.lums[6]) ** ((self.GB[6] - 1) / self.GB[6]))
 
     # Now to find Ltp and ttp using Mc,He,tp
-    mcbagb = mcagbf(mass, zcnsts)
+    mcbagb = self.mcagbf(self.mass)
     mc1 = mcbagb
     # The star undergoes dredge-up at Ltp causing a decrease in Mc,He
     if 0.8 <= mc1 < 2.25:
         mc1 = 0.44 * mc1 + 0.448
-    lums[8] = mc_to_lum_gb(mc1, GB)
-    if mc1 <= GB[7]:
-        tscls[13] = tscls[7] - (1 / ((GB[5] - 1) * GB[8] * GB[4])) * (mc1 ** (1 - GB[5]))
+    self.lums[8] = self.mc_to_lum_gb(mc1, self.GB)
+    if mc1 <= self.GB[7]:
+        self.tscls[13] = self.tscls[7] - (1 / ((self.GB[5] - 1) * self.GB[8] * self.GB[4])) * (mc1 ** (1 - self.GB[5]))
     else:
-        tscls[13] = tscls[8] - (1 / ((GB[6] - 1) * GB[8] * GB[3])) * (mc1 ** (1 - GB[6]))
+        self.tscls[13] = self.tscls[8] - (1 / ((self.GB[6] - 1) * self.GB[8] * self.GB[3])) * (mc1 ** (1 - self.GB[6]))
 
     # TPAGB 时标参数
-    if mc1 <= GB[7]:
-        tscls[10] = tscls[13] + (1 / ((GB[5] - 1) * GB[2] * GB[4])) * ((GB[4] / lums[8]) ** ((GB[5] - 1) / GB[5]))
-        tscls[12] = tscls[10] - (tscls[10] - tscls[13]) * ((lums[8] / lums[6]) ** ((GB[5] - 1) / GB[5]))
-        tscls[11] = tscls[12] + (1 / ((GB[6] - 1) * GB[2] * GB[3])) * ((GB[3] / lums[6]) ** ((GB[6] - 1) / GB[6]))
+    if mc1 <= self.GB[7]:
+        self.tscls[10] = self.tscls[13] + (1 / ((self.GB[5] - 1) * self.GB[2] * self.GB[4])) * ((self.GB[4] / self.lums[8]) ** ((self.GB[5] - 1) / self.GB[5]))
+        self.tscls[12] = self.tscls[10] - (self.tscls[10] - self.tscls[13]) * ((self.lums[8] / self.lums[6]) ** ((self.GB[5] - 1) / self.GB[5]))
+        self.tscls[11] = self.tscls[12] + (1 / ((self.GB[6] - 1) * self.GB[2] * self.GB[3])) * ((self.GB[3] / self.lums[6]) ** ((self.GB[6] - 1) / self.GB[6]))
     else:
-        tscls[10] = tscls[7]
-        tscls[12] = tscls[9]
-        tscls[11] = tscls[13] + (1 / ((GB[6] - 1) * GB[2] * GB[3])) * ((GB[3] / lums[8]) ** ((GB[6] - 1) / GB[6]))
+        self.tscls[10] = self.tscls[7]
+        self.tscls[12] = self.tscls[9]
+        self.tscls[11] = self.tscls[13] + (1 / ((self.GB[6] - 1) * self.GB[2] * self.GB[3])) * ((self.GB[3] / self.lums[8]) ** ((self.GB[6] - 1) / self.GB[6]))
 
     # Get an idea of when Mc,C = Mc,C,max on the AGB
-    tau = tscls[2] + tscls[3]
-    mc2 = mcgbtf(tau, GB[8], GB, tscls[7], tscls[8], tscls[9])
+    tau = self.tscls[2] + self.tscls[3]    # cgbtf(self, t, A, tinf1, tinf2, tx):
+    mc2 = self.mcgbtf(tau, self.GB[8], GB, self.tscls[7], self.tscls[8], self.tscls[9])
     mcmax = max(max(mch, 0.773 * mcbagb - 0.35), 1.05 * mc2)
     if mcmax <= mc1:
-        if mcmax <= GB[7]:
-            tscls[14] = tscls[7] - (1 / ((GB[5] - 1) * GB[8] * GB[4])) * (mcmax ** (1 - GB[5]))
+        if mcmax <= self.GB[7]:
+            self.tscls[14] = self.tscls[7] - (1 / ((self.GB[5] - 1) * self.GB[8] * self.GB[4])) * (mcmax ** (1 - self.GB[5]))
         else:
-            tscls[14] = tscls[8] - (1 / ((GB[6] - 1) * GB[8] * GB[3])) * (mcmax ** (1 - GB[6]))
+            self.tscls[14] = self.tscls[8] - (1 / ((self.GB[6] - 1) * self.GB[8] * self.GB[3])) * (mcmax ** (1 - self.GB[6]))
     # Star is on SAGB and we need to increase mcmax if any 3rd dredge-up has occurred.
     else:
-        Lambda = min(0.9, 0.3 + 0.001 * mass ** 5)  # 这里的 Lambda 仅为局部变量
+        Lambda = min(0.9, 0.3 + 0.001 * self.mass ** 5)  # 这里的 Lambda 仅为局部变量
         mcmax = (mcmax - Lambda * mc1) / (1 - Lambda)
-        if mcmax <= GB[7]:
-            tscls[14] = tscls[10] - (1 / ((GB[5] - 1) * GB[2] * GB[4])) * (mcmax ** (1 - GB[5]))
+        if mcmax <= self.GB[7]:
+            self.tscls[14] = self.tscls[10] - (1 / ((self.GB[5] - 1) * self.GB[2] * self.GB[4])) * (mcmax ** (1 - self.GB[5]))
         else:
-            tscls[14] = tscls[11] - (1 / ((GB[6] - 1) * GB[2] * GB[3])) * (mcmax ** (1 - GB[6]))
-    tscls[14] = max(tbagb, tscls[14])
-    if mass > 100:
-        tn = tscls[2]
-        return tm, tn, tscls, lums, GB   # 结束此函数
+            self.tscls[14] = self.tscls[11] - (1 / ((self.GB[6] - 1) * self.GB[2] * self.GB[3])) * (mcmax ** (1 - self.GB[6]))
+    self.tscls[14] = max(tbagb, self.tscls[14])
+    if self.mass > 100:
+        tn = self.tscls[2]
+        return tm, tn, self.tscls, lums, GB   # 结束此函数
 
     # 计算核时标: 不考虑进一步的质量损失时, 耗尽核燃料的时间。我们定义 Mc = Mt 的时间为 Tn, 这也会用于确定所需的时间步长
     # 注意, 当某些恒星达到 Mc = Mt 之后还会有一个氦星的演化时间, 后者也是一个核燃烧阶段, 但并不包括在 Tn 内
@@ -225,45 +225,45 @@ def star(self):
     else:
         if mt > mcbagb or (mt >= mc1 and kw > 4):
             if kw == 6:
-                Lambda = min(0.9, 0.3 + 0.001 * mass ** 5)  # 这里的 Lambda 仅为局部变量
+                Lambda = min(0.9, 0.3 + 0.001 * self.mass ** 5)  # 这里的 Lambda 仅为局部变量
                 mc1 = (mt - Lambda * mc1) / (1 - Lambda)
             else:
                 mc1 = mt
-            if mc1 <= GB[7]:
-                tn = tscls[10] - (1 / ((GB[5] - 1) * GB[2] * GB[4])) * (mc1 ** (1 - GB[5]))
+            if mc1 <= self.GB[7]:
+                tn = self.tscls[10] - (1 / ((self.GB[5] - 1) * self.GB[2] * self.GB[4])) * (mc1 ** (1 - self.GB[5]))
             else:
-                tn = tscls[11] - (1 / ((GB[6] - 1) * GB[2] * GB[3])) * (mc1 ** (1 - GB[6]))
+                tn = self.tscls[11] - (1 / ((self.GB[6] - 1) * self.GB[2] * self.GB[3])) * (mc1 ** (1 - self.GB[6]))
         else:
             # 大质量恒星
-            if mass > zcnsts.zpars[3]:
-                mc1 = mcheif(mass, zcnsts.zpars[2], zcnsts.zpars[10], zcnsts)
+            if self.mass > self.zcnsts.zpars[3]:
+                mc1 = mcheif(mass, self.zcnsts.zpars[2], self.zcnsts.zpars[10], zcnsts)
                 if mt <= mc1:
-                    tn = tscls[2]
+                    tn = self.tscls[2]
                 else:
-                    tn = tscls[2] + tscls[3] * ((mt - mc1) / (mcbagb - mc1))
+                    tn = self.tscls[2] + self.tscls[3] * ((mt - mc1) / (mcbagb - mc1))
             # 小质量恒星
-            elif mass <= zcnsts.zpars[2]:
+            elif self.mass <= self.zcnsts.zpars[2]:
                 mc1 = lum_to_mc_gb(lums[3], GB, lums[6])
                 mc2 = lum_to_mc_gb(lums[4], GB, lums[6])
                 if mt <= mc1:
-                    tn = tscls[1]
+                    tn = self.tscls[1]
                 elif mt <= mc2:
-                    if mt <= GB[7]:
-                        tn = tscls[4] - (1 / ((GB[5] - 1) * GB[1] * GB[4])) * (mt ** (1 - GB[5]))
+                    if mt <= self.GB[7]:
+                        tn = self.tscls[4] - (1 / ((self.GB[5] - 1) * self.GB[1] * self.GB[4])) * (mt ** (1 - self.GB[5]))
                     else:
-                        tn = tscls[5] - (1 / ((GB[6] - 1) * GB[1] * GB[3])) * (mt ** (1 - GB[6]))
+                        tn = self.tscls[5] - (1 / ((self.GB[6] - 1) * self.GB[1] * self.GB[3])) * (mt ** (1 - self.GB[6]))
                 else:
-                    tn = tscls[2] + tscls[3] * ((mt - mc2) / (mcbagb - mc2))
+                    tn = self.tscls[2] + self.tscls[3] * ((mt - mc2) / (mcbagb - mc2))
             # 中等质量恒星
             else:
-                mc1 = mcheif(mass, zcnsts.zpars[2], zcnsts.zpars[9], zcnsts)
-                mc2 = mcheif(mass, zcnsts.zpars[2], zcnsts.zpars[10], zcnsts)
+                mc1 = mcheif(mass, self.zcnsts.zpars[2], self.zcnsts.zpars[9], zcnsts)
+                mc2 = mcheif(mass, self.zcnsts.zpars[2], self.zcnsts.zpars[10], zcnsts)
                 if mt <= mc1:
-                    tn = tscls[1]
+                    tn = self.tscls[1]
                 elif mt <= mc2:
-                    tgb = tscls[2] - tscls[1]
-                    tn = tscls[1] + tgb * ((mt - mc1) / (mc2 - mc1))
+                    tgb = self.tscls[2] - self.tscls[1]
+                    tn = self.tscls[1] + tgb * ((mt - mc1) / (mc2 - mc1))
                 else:
-                    tn = tscls[2] + tscls[3] * ((mt - mc2) / (mcbagb - mc2))
-    tn = min(tn, tscls[14])
-    return tm, tn, tscls, lums, GB    # 结束此函数
+                    tn = self.tscls[2] + self.tscls[3] * ((mt - mc2) / (mcbagb - mc2))
+    tn = min(tn, self.tscls[14])
+    return tm, tn, self.tscls, lums, GB    # 结束此函数
