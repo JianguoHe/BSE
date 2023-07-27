@@ -1,8 +1,6 @@
 import numpy as np
 from zdata import zdata
 from utils import conditional_njit
-from star import star
-from SingleStar import SingleStar
 # from zfuncs import lbagbf, rminf, lum_to_mc_gb, lHeIf, ragbf, lzahbf, rgbf, lHef, tHef, rtmsf
 
 
@@ -370,14 +368,9 @@ def zcnsts_set(self):
     # finish Lzahb
     self.gbp[74] = lhefl * self.lHef(self.zpars[2])
 
-    star_temp = SingleStar(type=1, mass=self.zpars[2], Z=0.02)
-    star(star_temp)
-    # kw = 1
-    # (tm, tn, tscls, lums, GB) = star(kw, self.zpars[2], self.zpars[2], x)
-
     # 这里zpars[9]和zpars[10]分别算的是质量为M_HeF的恒星在BGB和HeI时的核质量
-    self.zpars[9] = self.lum_to_mc_gb(star_temp.lums[3])
-    self.zpars[10] = self.lum_to_mc_gb(star_temp.lums[4])
+    self.zpars[9] = -0.037 * np.log10(z) + 0.145
+    self.zpars[10] = -0.013 * np.log10(z) ** 2 - 0.083 * np.log10(z) + 0.214
     # set the hydrogen and helium abundances
     self.zpars[11] = 0.76 - 3 * z
     self.zpars[12] = 0.24 + 2 * z
