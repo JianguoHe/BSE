@@ -35,8 +35,9 @@ spec = [
     ('mdot_wind_accrete', float64),         # 星风质量吸积率
     ('jdot_spin_wind', float64),            # 星风提取的自旋角动量
     ('jdot_spin_mb', float64),              # 磁制动提取的自旋角动量
-    ('max_time', float64),                  # 最长演化时间        [unit: Myr]
+    ('max_time', float64),                  # 最长演化时间          [unit: Myr]
     ('time', float64),                      # 当前的演化时间        [unit: Myr]
+    ('age', float64),                       # 当前type的演化时间    [unit: Myr]
     ('max_step', float64),                  # 最大演化步长
     ('step', int64),                        # 当前的演化步长
     ('data', float64[:, :]),                # 存储每个步长的属性
@@ -57,7 +58,7 @@ class SingleStar:
                  mass_core=0, mass_he_core=0, mass_c_core=0, mass_o_core=0, mass_co_core=0, mass_envelop=0,
                  radius_core=0, radius_he_core=0, radius_c_core=0, radius_o_core=0, radius_co_core=0,
                  mdot_wind_loss=0, mdot_wind_accrete=0, jdot_spin_wind=0, jdot_spin_mb=0,
-                 max_time=10000, time=0, max_step=20000, step=0):
+                 max_time=10000, time=0, age=0, max_step=20000, step=0):
         self.type = type
         self.Z = Z
         self.mass0 = mass
@@ -86,6 +87,7 @@ class SingleStar:
         self.jdot_spin_mb = jdot_spin_mb
         self.max_time = max_time
         self.time = time
+        self.age = age
         self.max_step = max_step
         self.step = step
         self.data = np.zeros((max_step, 30))
@@ -275,11 +277,12 @@ class SingleStar:
         return lzams
 
     # 估算零龄主序半径 Rzams
-    def rzamsf(self):
-        mx = np.sqrt(self.mass0)
-        rzams = ((self.msp[8] * self.mass0 ** 2 + self.msp[9] * self.mass0 ** 6) * mx + self.msp[10] * self.mass0 ** 11 + (
-                self.msp[11] + self.msp[12] * mx) * self.mass0 ** 19) / (self.msp[13] + self.msp[14] * self.mass0 ** 2 + (
-                self.msp[15] * self.mass0 ** 8 + self.mass0 ** 18 + self.msp[16] * self.mass0 ** 19) * mx)
+    def rzamsf(self, m=0):
+        mass = self.mass0 if m == 0 else m
+        mx = np.sqrt(mass)
+        rzams = ((self.msp[8] * mass ** 2 + self.msp[9] * mass ** 6) * mx + self.msp[10] * mass ** 11 + (
+                self.msp[11] + self.msp[12] * mx) * mass ** 19) / (self.msp[13] + self.msp[14] * mass ** 2 + (
+                self.msp[15] * mass ** 8 + mass ** 18 + self.msp[16] * mass ** 19) * mx)
         return rzams
 
     # A function to evaluate the lifetime to the BGB or to Helium ignition if no FGB exists. (JH 24/11/97)
@@ -374,7 +377,7 @@ class SingleStar:
         if mass <= self.msp[62]:
             rtms = (self.msp[52] + self.msp[53] * mass ** self.msp[55]) / (self.msp[54] + mass** self.msp[56])
             # extrapolated to low mass(M < 0.5)
-            rtms = max(rtms, 1.5 * self.rzamsf())
+            rtms = max(rtms, 1.5 * self.rzamsf(mass))
         elif mass >= self.msp[62] + 0.1:
             rtms = (self.msp[57] * mass ** 3 + self.msp[58] * mass ** self.msp[61] + self.msp[59] * mass ** (self.msp[61] + 1.5)) / (
                     self.msp[60] + mass ** 5)
@@ -524,12 +527,13 @@ class SingleStar:
     # Continuity between the LM and IM functions is ensured with a first call setting lhefl = lHeIf(mhefl,0.0)
     # [已校验] Hurley_2000: equation 5.3(49) 第二行有出入
     def lHeIf(self, m=0):
+        mass = self.mass0 if m == 0 else m
         if self.mass0 < self.zpars[2]:
             lHeI = self.gbp[38] * self.mass0 ** self.gbp[39] / (1 + self.gbp[41] * np.exp(self.mass0 * self.gbp[40]))
         else:
             lHeI = (self.gbp[42] + self.gbp[43] * self.mass0 ** 3.8) / (self.gbp[44] + self.mass0 ** 2)
-        if m > 0:
-            lHeI = (self.gbp[42] + self.gbp[43] * m ** 3.8) / (self.gbp[44] + m ** 2)
+        if mass > 0:
+            lHeI = (self.gbp[42] + self.gbp[43] * mass ** 3.8) / (self.gbp[44] + mass ** 2)
         return lHeI
 
     # A function to evaluate the ratio LHe,min/LHeI  (OP 20/11/97)
@@ -650,3 +654,120 @@ class SingleStar:
     def rzhef(self, m):
         rzhe = 0.2391 * m ** 4.6 / (m ** 4 + 0.162 * m ** 3 + 0.0065)
         return rzhe
+
+    # A function to evaluate radius derivitive on the GB (as f(L)). [无调用]
+    def rgbdf(m, lum, x):
+        a1 = min(x.gbp[20] / m ** x.gbp[21], x.gbp[22] / m ** x.gbp[23])
+        rgbd = a1 * (x.gbp[18] * lum ** (x.gbp[18] - 1) + x.gbp[17] * x.gbp[19] * lum ** (x.gbp[19] - 1))
+        return rgbd
+
+    # A function to evaluate radius derivitive on the AGB (as f(L)).[无调用]
+    def ragbdf(m, lum, mhelf, x):
+        m1 = mhelf - 0.2
+        if m >= mhelf:
+            xx = x.gbp[24]
+        elif m >= m1:
+            xx = 1 + 5 * (x.gbp[24] - 1) * (m - m1)
+        else:
+            xx = 1
+        a4 = xx * x.gbp[19]
+        if m <= m1:
+            a1 = x.gbp[29] + x.gbp[30] * m
+        elif m >= mhelf:
+            a1 = min(x.gbp[25] / m ** x.gbp[26], x.gbp[27] / m ** x.gbp[28])
+        else:
+            a1 = x.gbp[31] + 5 * (x.gbp[32] - x.gbp[31]) * (m - m1)
+        ragbd = a1 * (x.gbp[18] * lum ** (x.gbp[18] - 1) + x.gbp[17] * a4 * lum ** (a4 - 1))
+        return ragbd
+
+    # A function to evaluate core mass at the end of the MS as a fraction of the BGB value,
+    # i.e. this must be multiplied by the BGB value (see below) to give the actual core mass.
+    # [已校验] Hurley_2000: equation 5.1.2(29)
+    def mctmsf(self):
+        mctms = (1.586 + self.mass0 ** 5.25) / (2.434 + 1.02 * self.mass0 ** 5.25)
+        return mctms
+
+    # A function to evaluate mass at BGB or He ignition (depending on mchefl) for IM & HM stars by inverting mcheif
+    def mheif(self, mc, mhefl, mchefl):
+        m1 = self.mbagbf(mc / 0.95)
+        a3 = mchefl ** 4 - self.gbp[33] * mhefl ** self.gbp[34]
+        m2 = ((mc ** 4 - a3) / self.gbp[33]) ** (1 / self.gbp[34])
+        mhei = max(m1, m2)
+        return mhei
+
+    # A function to evaluate mass at the BAGB by inverting mcagbf.
+    def mbagbf(self, mc):
+        mc4 = mc ** 4
+        if mc4 > self.gbp[37]:
+            mbagb = ((mc4 - self.gbp[37]) / self.gbp[35]) ** (1 / self.gbp[36])
+        else:
+            mbagb = 0
+        return mbagb
+
+    # A function to evaluate L given t for GB, AGB and NHe stars
+    # [已校验] Hurley_2000: equation 5.2(35)
+    def lgbtf(self, t, A):
+        if t <= self.tscls[6]:
+            lgbt = self.GB[4] * (((self.GB[5] - 1) * A * self.GB[4] * (self.tscls[4] - t)) ** (self.GB[5] / (1 - self.GB[5])))
+        else:
+            lgbt = self.GB[3] * (((self.GB[6] - 1) * A * self.GB[3] * (self.tscls[5] - t)) ** (self.GB[6] / (1 - self.GB[6])))
+        return lgbt
+
+    # A function to evaluate the blue-loop fraction of the He-burning lifetime for IM & HM stars  (OP 28/01/98)
+    # [已校验] Hurley_2000: equation 5.3(58) 有些不太一样
+    def tblf(self):
+        mr = self.zpars[2] / self.zpars[3]
+        if self.mass0 <= self.zpars[3]:
+            m1 = self.mass0 / self.zpars[3]
+            m2 = np.log10(m1) / np.log10(mr)
+            m2 = max(m2, 1e-12)
+            tbl = self.gbp[64] * m1 ** self.gbp[63] + self.gbp[65] * m2 ** self.gbp[62]
+        else:
+            r1 = 1 - self.rminf(self.mass0) / self.ragbf(self.mass0, self.lHeIf(), self.zpars[2], self)
+            r1 = max(r1, 1e-12)
+            tbl = self.gbp[66] * self.mass0 ** self.gbp[67] * r1 ** self.gbp[68]
+        tbl = min(1, max(0, tbl))
+        if tbl < 1e-10:
+            tbl = 0
+        return tbl
+
+    # 估算 He 星主序上的光度
+    # [已校验] Hurley_2000: equation 6.1(78) [无调用]
+    def l_He_MS(self, m):
+        lzhe = 15262 * m ** 10.25 / (m ** 9 + 29.54 * m ** 7.5 + 31.18 * m ** 6 + 0.0469)
+        return lzhe
+
+    # 根据质量、光度估算赫氏空隙中 He 星的半径
+    def rhehgf(self, m, lum, rzhe, lthe):
+        Lambda = 500 * (2 + m ** 5) / m ** 2.5
+        rhehg = rzhe * (lum / lthe) ** 0.2 + 0.02 * (np.exp(lum / Lambda) - np.exp(lthe / Lambda))
+        return rhehg
+
+    # 估算 He 巨星的半径
+    def rhegbf(self, lum):
+        rhegb = 0.08 * lum ** (3 / 4)
+        return rhegb
+
+    # 估算光度扰动的指数(适用于非主序星)
+    def lpert1f(self, m, mu):
+        b = 0.002 * max(1, 2.5 / m)
+        lpert = (1 + b ** 3) * ((mu / b) ** 3) / (1 + (mu / b) ** 3)
+        return lpert
+
+    # 估算半径扰动的指数(适用于非主序星)
+    def rpert1f(self, m, mu, r, rc):
+        if mu <= 0:
+            rpert = 0
+        else:
+            c = 0.006 * max(1, 2.5 / m)
+            q = np.log(r / rc)
+            fac = 0.1 / q
+            facmax = -14 / np.log10(mu)
+            fac = min(fac, facmax)
+            rpert = ((1 + c ** 3) * ((mu / c) ** 3) * (mu ** fac)) / (1 + (mu / c) ** 3)
+        return rpert
+
+    def vrotf(self, m):
+        vrot = 330 * m ** 3.3 / (15 + m ** 3.45)
+        return vrot
+
