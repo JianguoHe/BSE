@@ -3,7 +3,10 @@ from BinaryStar import BinaryStar
 
 
 star1 = SingleStar(type=1, mass=2, Z=0.02)
+print(star1.Z)
 print(star1.zpars)
+print(star1.msp)
+print(star1.gbp)
 
 
 
