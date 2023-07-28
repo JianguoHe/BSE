@@ -31,6 +31,7 @@ spec = [
     ('radius_c_core', float64),             # in solar units
     ('radius_o_core', float64),             # in solar units
     ('radius_co_core', float64),            # in solar units
+    ('radius_envelop', float64),            # in solar units
     ('mdot_wind_loss', float64),            # 星风质量损失率
     ('mdot_wind_accrete', float64),         # 星风质量吸积率
     ('jdot_spin_wind', float64),            # 星风提取的自旋角动量
@@ -57,7 +58,7 @@ class SingleStar:
     def __init__(self, type, Z, mass, R=0, L=0, dt=1e6, Teff=0, spin=0, jspin=0, rochelobe=0,
                  mass_core=0, mass_he_core=0, mass_c_core=0, mass_o_core=0, mass_co_core=0, mass_envelop=0,
                  radius_core=0, radius_he_core=0, radius_c_core=0, radius_o_core=0, radius_co_core=0,
-                 mdot_wind_loss=0, mdot_wind_accrete=0, jdot_spin_wind=0, jdot_spin_mb=0,
+                 radius_envelop=0, mdot_wind_loss=0, mdot_wind_accrete=0, jdot_spin_wind=0, jdot_spin_mb=0,
                  max_time=10000, time=0, age=0, max_step=20000, step=0):
         self.type = type
         self.Z = Z
@@ -81,6 +82,7 @@ class SingleStar:
         self.radius_c_core = radius_c_core
         self.radius_o_core = radius_o_core
         self.radius_co_core = radius_co_core
+        self.radius_envelop = radius_envelop
         self.mdot_wind_loss = mdot_wind_loss
         self.mdot_wind_accrete = mdot_wind_accrete
         self.jdot_spin_wind = jdot_spin_wind
