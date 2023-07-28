@@ -84,7 +84,7 @@ def star(self):
 
     # 主序和 BGB 时间
     self.tscls[1] = self.tbgbf()
-    self.tm = max(self.zcnsts.zpars[8], self.thook_div_tBGB()) * self.tscls[1]
+    self.tm = max(self.zpars[8], self.thook_div_tBGB()) * self.tscls[1]
     # 零龄主序和主序末尾的光度
     self.lums[1] = self.lzamsf()
     self.lums[2] = self.ltmsf()
@@ -93,18 +93,18 @@ def star(self):
     self.GB[2] = 1.27e-5
     self.GB[8] = 8e-5
     self.GB[3] = max(3e4, 500 + 1.75e4 * self.mass0 ** 0.6)
-    if self.mass0 <= self.zcnsts.zpars[2]:
-        self.GB[4] = self.zcnsts.zpars[6]
+    if self.mass0 <= self.zpars[2]:
+        self.GB[4] = self.zpars[6]
         self.GB[5] = 6
         self.GB[6] = 3
     elif self.mass0 < 2.5:
         # 这里用的是线性插值，很明显在 mass=2.5 处，self.GB[4] = 0.975 * zcnsts.zpars[6] - 0.18 * mass
-        dlogD = (0.975 * self.zcnsts.zpars[6] - 0.18 * 2.5) - self.zcnsts.zpars[6]
-        self.GB[4] = self.zcnsts.zpars[6] + dlogD * (self.mass0 - self.zcnsts.zpars[2]) / (2.5 - self.zcnsts.zpars[2])
-        self.GB[5] = 6 - (self.mass0 - self.zcnsts.zpars[2]) / (2.5 - self.zcnsts.zpars[2])
-        self.GB[6] = 3 - (self.mass0 - self.zcnsts.zpars[2]) / (2.5 - self.zcnsts.zpars[2])
+        dlogD = (0.975 * self.zpars[6] - 0.18 * 2.5) - self.zpars[6]
+        self.GB[4] = self.zpars[6] + dlogD * (self.mass0 - self.zpars[2]) / (2.5 - self.zpars[2])
+        self.GB[5] = 6 - (self.mass0 - self.zpars[2]) / (2.5 - self.zpars[2])
+        self.GB[6] = 3 - (self.mass0 - self.zpars[2]) / (2.5 - self.zpars[2])
     else:
-        self.GB[4] = max(-1, 0.975 * self.zcnsts.zpars[6] - 0.18 * self.mass0, 0.5 * self.zcnsts.zpars[6] - 0.06 * self.mass0)
+        self.GB[4] = max(-1, 0.975 * self.zpars[6] - 0.18 * self.mass0, 0.5 * self.zpars[6] - 0.06 * self.mass0)
         self.GB[5] = 5
         self.GB[6] = 2
     self.GB[4] = 10 ** self.GB[4]
@@ -122,7 +122,7 @@ def star(self):
         return 0
 
     # 中小质量恒星, 会经历FGB阶段
-    if self.mass0 <= self.zcnsts.zpars[3]:
+    if self.mass0 <= self.zpars[3]:
         # 巨星分支底部的光度
         self.lums[3] = self.lbgbf()
         # Set GB timescales
@@ -135,33 +135,33 @@ def star(self):
         else:
             self.tscls[2] = self.tscls[5] - (1 / ((self.GB[6] - 1) * self.GB[1] * self.GB[3])) * ((self.GB[3] / self.lums[4]) ** ((self.GB[6] - 1) / self.GB[6]))
         # 小质量恒星
-        if self.mass0 <= self.zcnsts.zpars[2]:
+        if self.mass0 <= self.zpars[2]:
             mc1 = self.lum_to_mc_gb(self.lums[4])
-            self.lums[5] = self.lzahbf(self.mass0, mc1, self.zcnsts.zpars[2])
-            self.tscls[3] = self.tHef(self.mass0, mc1, self.zcnsts.zpars[2])
+            self.lums[5] = self.lzahbf(self.mass0, mc1, self.zpars[2])
+            self.tscls[3] = self.tHef(self.mass0, mc1, self.zpars[2])
         # 中等质量恒星
         else:
             self.lums[5] = self.lHef() * self.lums[4]
-            self.tscls[3] = self.tHef(self.mass0, 1, self.zcnsts.zpars[2]) * self.tscls[1]
+            self.tscls[3] = self.tHef(self.mass0, 1, self.zpars[2]) * self.tscls[1]
     # 大质量恒星
     else:
         # Note that for M > zpars[3] there is no GB as the star goes from HG -> CHeB -> AGB.
         # So in effect self.tscls[1] refers to the time of Helium ignition and not the BGB.
         self.tscls[2] = self.tscls[1]
         # 这里由于是大质量恒星, 因此氦燃烧时间与核质量无关，可为任意值(此处为1)
-        self.tscls[3] = self.tHef(self.mass0, 1, self.zcnsts.zpars[2]) * self.tscls[1]
+        self.tscls[3] = self.tHef(self.mass0, 1, self.zpars[2]) * self.tscls[1]
         # This now represents the luminosity at the end of CHeB, ie. BAGB
         self.lums[5] = self.lums[7]   # 【疑问】为什么对于大质量恒星, 氦燃烧的光度等于BAGB的光度？
         # We set lums[3] to be the luminosity at the end of the HG
         self.lums[3] = self.lums[4]
 
     # 设置巨星分支底部的核质量
-    if self.mass0 <= self.zcnsts.zpars[2]:
+    if self.mass0 <= self.zpars[2]:
         self.GB[9] = self.lum_to_mc_gb(self.lums[3])
-    elif self.mass0 <= self.zcnsts.zpars[3]:
-        self.GB[9] = self.mcheif(self.mass0, self.zcnsts.zpars[2], self.zcnsts.zpars[9])
+    elif self.mass0 <= self.zpars[3]:
+        self.GB[9] = self.mcheif(self.mass0, self.zpars[2], self.zpars[9])
     else:
-        self.GB[9] = self.mcheif(self.mass0, self.zcnsts.zpars[2], self.zcnsts.zpars[10])
+        self.GB[9] = self.mcheif(self.mass0, self.zpars[2], self.zpars[10])
 
     # EAGB 时标参数
     tbagb = self.tscls[2] + self.tscls[3]
@@ -232,14 +232,14 @@ def star(self):
                 self.tn = self.tscls[11] - (1 / ((self.GB[6] - 1) * self.GB[2] * self.GB[3])) * (mc1 ** (1 - self.GB[6]))
         else:
             # 大质量恒星
-            if self.mass0 > self.zcnsts.zpars[3]:
-                mc1 = self.mcheif(self.mass0, self.zcnsts.zpars[2], self.zcnsts.zpars[10])
+            if self.mass0 > self.zpars[3]:
+                mc1 = self.mcheif(self.mass0, self.zpars[2], self.zpars[10])
                 if self.mass <= mc1:
                     self.tn = self.tscls[2]
                 else:
                     self.tn = self.tscls[2] + self.tscls[3] * ((self.mass - mc1) / (mcbagb - mc1))
             # 小质量恒星
-            elif self.mass0 <= self.zcnsts.zpars[2]:
+            elif self.mass0 <= self.zpars[2]:
                 mc1 = self.lum_to_mc_gb(self.lums[3])
                 mc2 = self.lum_to_mc_gb(self.lums[4])
                 if self.mass <= mc1:
@@ -253,8 +253,8 @@ def star(self):
                     self.tn = self.tscls[2] + self.tscls[3] * ((self.mass - mc2) / (mcbagb - mc2))
             # 中等质量恒星
             else:
-                mc1 = self.mcheif(self.mass0, self.zcnsts.zpars[2], self.zcnsts.zpars[9])
-                mc2 = self.mcheif(self.mass0, self.zcnsts.zpars[2], self.zcnsts.zpars[10])
+                mc1 = self.mcheif(self.mass0, self.zpars[2], self.zpars[9])
+                mc2 = self.mcheif(self.mass0, self.zpars[2], self.zpars[10])
                 if self.mass <= mc1:
                     self.tn = self.tscls[1]
                 elif self.mass <= mc2:
