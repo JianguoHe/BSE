@@ -706,8 +706,8 @@ class SingleStar:
 
     # A function to evaluate L given t for GB, AGB and NHe stars
     # [已校验] Hurley_2000: equation 5.2(35)
-    def lgbtf(self, t, A):
-        if t <= self.tscls[6]:
+    def lgbtf(self, A):
+        if self.age <= self.tscls[6]:
             lgbt = self.GB[4] * (((self.GB[5] - 1) * A * self.GB[4] * (self.tscls[4] - t)) ** (self.GB[5] / (1 - self.GB[5])))
         else:
             lgbt = self.GB[3] * (((self.GB[6] - 1) * A * self.GB[3] * (self.tscls[5] - t)) ** (self.GB[6] / (1 - self.GB[6])))

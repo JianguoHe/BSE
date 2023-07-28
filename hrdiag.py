@@ -4,6 +4,7 @@ from star import star
 from mrenv import mrenv
 from supernova import SN_remnant
 from const import wdflag, mxns, mch, Rsun, tiny, M_ECSN
+from star import star
 # from zfuncs import thook_div_tBGB, tblf, lalphaf, lbetaf, lnetaf, lpertf, lgbtf
 # from zfuncs import mc_to_lum_gb, lzhef, lpert1f, rzamsf, rtmsf, ralphaf, rbetaf, rgammaf
 # from zfuncs import rpertf, rgbf, rminf, ragbf, rzahbf, rzhef, rhehgf, rhegbf
@@ -47,7 +48,7 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
 
         # 主序和赫氏空隙两个阶段
         if self.aj < self.tscls[1]:
-            rg = self.rgbf(mt, lums[3])
+            rg = self.rgbf(self.mass, lums[3])
             # 主序阶段(通常认为这个阶段核质量为 0)
             if self.aj < self.tm:
                 mc = 0.0
@@ -102,178 +103,180 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
                 mc_new = ((1.0 - tau) * rho + tau) * mcEHG
                 self.mass_core = max(self.mass_core, mc_new)
                 # 检验核质量是否达到当前的总质量(如果达到，则说明包层已被剥离，氦核根据是否简并分别演化为氦主序或氦白矮星)
-                if mc >= mt:
-                    aj = 0.0
+                if self.mass_core >= self.mass:
                     # 非简并氦核, 则演变为零龄 HeMS
-                    if mass > self.zpars[2]:
+                    if self.mass > self.zpars[2]:
                         self.type = 7
-                        mass = mt
-                        (tm, tn, tscls, lums, GB) = star(self.type, mass, mt, zcnsts)
+                        self.age = 0.0
+                        self.mass0 = self.mass
+                        star(self)
                     # 简并氦核, 则演变为零龄 HeWD
                     else:
                         self.type = 10
-                        mass = mt
-                        mc = mt
+                        self.age = 0.0
+                        self.mass0 = self.mass
+                        # mc = mt
                 else:
                     self.type = 2
                     # 计算赫氏空隙阶段光度
-                    lum = lums[2] * (lums[3] / lums[2]) ** tau
+                    self.L = self.lums[2] * (self.lums[3] / self.lums[2]) ** tau
 
                     # 计算赫氏空隙阶段半径
                     # 中低质量的 HG 末尾在 BGB 处
-                    if mass <= self.zpars[3]:
+                    if self.mass0 <= self.zpars[3]:
                         rx = rg
                     # 大质量的 HG 末尾在 He 点燃时(at Rmin)
                     else:
                         # 首先算一下 blue loop 阶段的最小半径
                         rmin = self.rminf(mass)
                         # 然后算一下 He 点燃时的半径
-                        ry = ragbf(mt, lums[4], self.zpars[2], zcnsts)
+                        ry = self.ragbf(self.mass, self.lums[4], self.zpars[2])
                         rx = min(rmin, ry)
-                        if mass <= mlp:
-                            texp = np.log(mass / mlp) / np.log(self.zpars[3] / mlp)
+                        if self.mass0 <= mlp:
+                            texp = np.log(self.mass0 / mlp) / np.log(self.zpars[3] / mlp)
                             rx = rg
                             rx = rmin * (rx / rmin) ** texp
-                        tau2 = tblf(mass, self.zpars[2], self.zpars[3], zcnsts)
+                        tau2 = self.tblf()
                         if tau2 < tiny:
                             rx = ry
-                    r = rtms * (rx / rtms) ** tau
+                    self.R = rtms * (rx / rtms) ** tau
 
         # 巨星分支
-        elif aj < tscls[2]:
+        elif self.age < self.tscls[2]:
             self.type = 3
             # 计算光度和半径
-            lum = lgbtf(aj, GB[1], GB, tscls[4], tscls[5], tscls[6])
-            r = self.rgbf(mt, lum)
-            rg = r
+            self.L = self.lgbtf(GB[1])
+            self.R = self.rgbf(self.mass, self.L)
+            rg = self.R
             # 计算核质量(对于核是否简并有不同的核质量公式)
             # 核简并时，核的质量在GB上持续增加
-            if mass <= self.zpars[2]:
-                mc = lum_to_mc_gb(lum, GB, lums[6])
+            if self.mass0 <= self.zpars[2]:
+                self.mass_core = self.lum_to_mc_gb(self.L)
             # 非简并核的质量在GB阶段只会轻微的增加
             else:
                 tau = (aj - tscls[1])/(tscls[2] - tscls[1])
-                mc_bgb = mcheif(mass, self.zpars[2], self.zpars[9], zcnsts)
-                mc_hei = mcheif(mass, self.zpars[2], self.zpars[10], zcnsts)
-                mc = mc_bgb + (mc_hei - mc_bgb) * tau
+                mc_bgb = self.mcheif(self.mass0, self.zpars[2], self.zpars[9])
+                mc_hei = self.mcheif(self.mass0, self.zpars[2], self.zpars[10])
+                self.mass_core = mc_bgb + (mc_hei - mc_bgb) * tau
             # 检验核质量是否达到当前的总质量
-            if mc >= mt:
-                aj = 0.0
+            if self.mass_core >= self.mass:
                 # 非简并氦核, 则演变为零龄 HeMS
-                if mass > self.zpars[2]:
+                if self.mass0 > self.zpars[2]:
                     self.type = 7
-                    mass = mt
-                    (tm, tn, tscls, lums, GB) = star(self.type, mass, mt, zcnsts)
+                    self.age = 0.0
+                    self.mass0 = self.mass
+                    star(self)
                 # 简并氦核, 则演变为零龄 HeWD
                 else:
                     self.type = 10
-                    mass = mt
-                    mc = mt
+                    self.age = 0.0
+                    self.mass0 = self.mass
 
         # 水平分支
-        elif aj < tbagb:
-            if self.type == 3 and mass <= self.zpars[2]:
-                mass = mt    # 这里为什么改变质量？不懂！
-                (tm, tn, tscls, lums, GB) = star(self.type, mass, mt, zcnsts)
-                aj = tscls[2]
+        elif self.age < tbagb:
+            if self.type == 3 and self.mass0 <= self.zpars[2]:
+                self.mass0 = self.mass    # 这里为什么改变初始质量？不懂！
+                star(self)
+                self.age = self.tscls[2]
 
             # 计算核质量
-            if mass <= self.zpars[2]:
-                mchei = lum_to_mc_gb(lums[4], GB, lums[6])
+            if self.mass0 <= self.zpars[2]:
+                mchei = self.lum_to_mc_gb(lums[4])
             else:
-                mchei = mcheif(mass, self.zpars[2], self.zpars[10], zcnsts)
-            tau = (aj - tscls[2]) / tscls[3]
-            mc = mchei + (mcagbf(mass, zcnsts) - mchei) * tau
+                mchei = self.mcheif(self.mass0, self.zpars[2], self.zpars[10])
+            tau = (self.age - self.tscls[2]) / self.tscls[3]
+            self.mass_core = mchei + (self.mcagbf(self.mass0) - mchei) * tau
 
             # 低质量恒星
-            if mass <= self.zpars[2]:
-                lx = lums[5]
-                ly = lums[7]
-                rx = rzahbf(mt, mc, self.zpars[2], zcnsts)
-                rg = self.rgbf(mt, lx)
-                rmin = rg * self.zpars[13] ** (mass / self.zpars[2])
-                texp = min(max(0.40, rmin / rx), 2.50)
-                ry = ragbf(mt, ly, self.zpars[2], zcnsts)
+            if self.mass0 <= self.zpars[2]:
+                lx = self.lums[5]
+                ly = self.lums[7]
+                rx = self.rzahbf(self.mass, self.mass_core, self.zpars[2])
+                rg = self.rgbf(self.mass, lx)
+                rmin = rg * self.zpars[13] ** (self.mass0 / self.zpars[2])
+                texp = min(max(0.4, rmin / rx), 2.5)
+                ry = self.ragbf(self.mass, ly, self.zpars[2])
                 if rmin < rx:
-                    taul = (np.log(rx/rmin))**(1.0/3.0)
+                    taul = (np.log(rx / rmin)) ** (1 / 3)
                 else:
                     rmin = rx
                     taul = 0.0
-                tauh = (np.log(ry / rmin)) ** (1.0 / 3.0)
+                tauh = (np.log(ry / rmin)) ** (1 / 3)
                 tau2 = taul * (tau - 1.0) + tauh * tau
-                r = rmin * np.exp(abs(tau2) ** 3)
+                self.R = rmin * np.exp(abs(tau2) ** 3)
                 rg = rg + tau * (ry - rg)
-                lum = lx * (ly / lx) ** (tau ** texp)
+                self.L = lx * (ly / lx) ** (tau ** texp)
 
             # 大质量恒星, 氦点燃发生在 HG 上的最小半径 (Rmin) 处
             # CHeB consists of a blue phase (before tloop) and a RG phase (after tloop).
-            elif mass > self.zpars[3]:
-                tau2 = tblf(mass, self.zpars[2], self.zpars[3], zcnsts)
-                tloop = tscls[2] + tau2 * tscls[3]
-                rmin = self.rminf(mass)
-                rg = self.rgbf(mt, lums[4])
-                rx = ragbf(mt, lums[4], self.zpars[2], zcnsts)
+            elif self.mass0 > self.zpars[3]:
+                tau2 = self.tblf()
+                tloop = self.tscls[2] + tau2 * self.tscls[3]
+                rmin = self.rminf(self.mass0)
+                rg = self.rgbf(self.mass, self.lums[4])
+                rx = self.ragbf(self.mass, self.lums[4], self.zpars[2])
                 rmin = min(rmin, rx)
-                if mass <= mlp:
-                    texp = np.log(mass / mlp) / np.log(self.zpars[3] / mlp)
+                if self.mass0 <= mlp:
+                    texp = np.log(self.mass0 / mlp) / np.log(self.zpars[3] / mlp)
                     rx = rg
                     rx = rmin * (rx / rmin) ** texp
                 else:
                     rx = rmin
-                texp = min(max(0.40, rmin / rx), 2.50)
-                lum = lums[4] * (lums[7] / lums[4]) ** (tau ** texp)
-                if aj < tloop:
-                    ly = lums[4] * (lums[7] / lums[4]) ** (tau2 ** texp)
-                    ry = ragbf(mt, ly, self.zpars[2], zcnsts)
+                texp = min(max(0.4, rmin / rx), 2.5)
+                self.L = self.lums[4] * (self.lums[7] / self.lums[4]) ** (tau ** texp)
+                if self.age < tloop:
+                    ly = self.lums[4] * (self.lums[7] / self.lums[4]) ** (tau2 ** texp)
+                    ry = self.ragbf(self.mass, ly, self.zpars[2])
                     taul = 0.0
                     if abs(rmin - rx) > tiny:
-                        taul = (np.log(rx / rmin)) ** (1.0 / 3.0)
+                        taul = (np.log(rx / rmin)) ** (1 / 3)
                     tauh = 0.0
                     if ry > rmin:
-                        tauh = (np.log(ry / rmin)) ** (1.0 / 3.0)
-                    tau = (aj - tscls[2]) / (tau2 * tscls[3])
+                        tauh = (np.log(ry / rmin)) ** (1 / 3)
+                    tau = (self.age - self.tscls[2]) / (tau2 * self.tscls[3])
                     tau2 = taul * (tau - 1.0) + tauh * tau
-                    r = rmin * np.exp(abs(tau2) ** 3)
+                    self.R = rmin * np.exp(abs(tau2) ** 3)
                     rg = rg + tau * (ry - rg)
                 else:
-                    r = ragbf(mt, lum, self.zpars[2], zcnsts)
+                    self.R = self.ragbf(self.mass, self.L, self.zpars[2])
                     rg = r
 
             # 中等质量恒星, CHeB consists of a RG phase (before tloop) and a blue loop (after tloop).
             else:
-                tau2 = 1.0 - tblf(mass, self.zpars[2], self.zpars[3], zcnsts)
-                tloop = tscls[2] + tau2 * tscls[3]
-                if aj < tloop:
-                    tau = (tloop - aj) / (tau2 * tscls[3])
-                    lum = lums[5] * (lums[4] / lums[5]) ** (tau ** 3)
-                    r = self.rgbf(mt, lum)
-                    rg = r
+                tau2 = 1.0 - self.tblf()
+                tloop = self.tscls[2] + tau2 * self.tscls[3]
+                if self.age < tloop:
+                    tau = (tloop - self.age) / (tau2 * self.tscls[3])
+                    self.L = self.lums[5] * (self.lums[4] / self.lums[5]) ** (tau ** 3)
+                    self.R = self.rgbf(self.mass, self.L)
+                    rg = self.R
                 else:
-                    lx = lums[5]
-                    ly = lums[7]
-                    rx = self.rgbf(mt, lx)
-                    rmin = self.rminf(mt)
-                    texp = min(max(0.40, rmin / rx), 2.50)
-                    ry = ragbf(mt, ly, self.zpars[2], zcnsts)
+                    lx = self.lums[5]
+                    ly = self.lums[7]
+                    rx = self.rgbf(self.mass, lx)
+                    rmin = self.rminf(self.mass)
+                    texp = min(max(0.4, rmin / rx), 2.5)
+                    ry = self.ragbf(self.mass, ly, self.zpars[2])
                     if rmin < rx:
-                        taul = (np.log(rx / rmin)) ** (1.0 / 3.0)
+                        taul = (np.log(rx / rmin)) ** (1 / 3)
                     else:
                         rmin = rx
                         taul = 0.0
-                    tauh = (np.log(ry / rmin)) ** (1.0 / 3.0)
-                    tau = (aj - tloop) / (tscls[3] - (tloop - tscls[2]))
+                    tauh = (np.log(ry / rmin)) ** (1 / 3)
+                    tau = (self.age - tloop) / (self.tscls[3] - (tloop - self.tscls[2]))
                     tau2 = taul * (tau - 1.0) + tauh * tau
-                    r = rmin * np.exp(abs(tau2) ** 3)
+                    self.R = rmin * np.exp(abs(tau2) ** 3)
                     rg = rx + tau * (ry - rx)
-                    lum = lx * (ly / lx) ** (tau ** texp)
+                    self.L = lx * (ly / lx) ** (tau ** texp)
 
             # 检验核质量是否达到当前的总质量
-            if mc >= mt:
+            if self.mass_core >= self.mass:
                 self.type = 7
-                tau = (aj - tscls[2])/tscls[3]
-                mass = mt   # 把氦星的初始质量 mass 近似为当前的核质量 mt, 因为后者的实际值无法计算
-                (tm, tn, tscls, lums, GB) = star(self.type, mass, mt, zcnsts)
-                aj = tau * tm
+                tau = (self.age - self.tscls[2]) / self.tscls[3]
+                # 把氦星的初始质量 mass 近似为当前的核质量 mt, 因为后者的实际值无法计算
+                self.mass0 = self.mass
+                star(self)
+                self.age = tau * self.tm
             else:
                 self.type = 4
 
@@ -393,7 +396,7 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
         # Helium Shell Burning
         else:
             self.type = 8
-            lum = lgbtf(aj, GB[8], GB, tscls[4], tscls[5], tscls[6])
+            lum = self.lgbtf(GB[8])
             r = rhehgf(mt, lum, rzams, lums[2])
             rg = rhegbf(lum)
             if r >= rg:
@@ -590,7 +593,7 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
     if self.type <= 9:
         rtms = self.rtmsf()   # 【疑问】这里的rtms公式是否对氦星适用
         rzams = rzamsf(mass, zcnsts) if self.type <= 6 else self.rzhef(mass)
-        (menv, renv, k2) = mrenv(kw, mass, mt, mc, lum, r, rc, aj, tm, lums[2], lums[3], lums[4], rzams, rtms, rg, k2)
+        k2 = mrenv(kw, mass, mt, mc, lum, r, rc, aj, tm, lums[2], lums[3], lums[4], rzams, rtms, rg, k2)
     else:
         menv = 1.0e-10
         renv = 1.0e-10
