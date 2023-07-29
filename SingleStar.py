@@ -50,6 +50,9 @@ spec = [
     ('tscls', float64[:]),                  # 到达不同阶段的时标
     ('lums', float64[:]),                   # 特征光度
     ('GB', float64[:]),                     # 巨星分支参数
+    ('f_fb', float64[:]),                   # 超新星爆炸后回落物质所占比例
+    ('meanvk', float64[:]),                 # stochastic模型下Natal Kick服从正态分布均值
+    ('sigmavk', float64[:]),                # stochastic模型下Natal Kick数值标准差
 ]
 
 
@@ -101,6 +104,9 @@ class SingleStar:
         self.tscls = np.zeros(20)
         self.lums = np.zeros(10)
         self.GB = np.zeros(10)
+        self.f_fb = 0
+        self.meanvk = 0
+        self.sigmavk = 0
         zcnsts_set(self)            # 设置金属丰度相关常数
 
     # 计算表面温度
