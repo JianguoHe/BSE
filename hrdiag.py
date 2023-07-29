@@ -285,8 +285,8 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
             envelop_lost = False
             SN_explosion = False
             # 以下的 mc_CO 表示CO核的质量, 部分情况也表示ONe核的质量
-            mcbagb = mcagbf(mass, zcnsts)                                               # BAGB时的核质量(He + CO)
-            mc_CO_bagb = mcgbtf(tbagb, GB[8], GB, tscls[7], tscls[8], tscls[9])         # BAGB时的CO核质量
+            mcbagb = self.mcagbf(self.mass0)                                               # BAGB时的核质量(He + CO)
+            mc_CO_bagb = self.mcgbtf(tbagb, self.GB[8], self.GB, self.tscls[7], self.tscls[8], self.tscls[9])         # BAGB时的CO核质量
             # 根据mcbagb质量不同, 超新星爆发有不同的临界质量
             # 对于简并碳氧核, 超新星爆发的核质量极限是Mch
             if mcbagb < 1.83:
@@ -304,52 +304,54 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
 
             # EAGB 阶段, Mc = Mc_He + Mc_CO = Mc_bagb(常数), 而Mc_CO 随时间不断增长, 直到全部的He核转为CO核, EAGB结束
             # 对于0.8 < Mc_bagb < 2.25的恒星, 会有一个second dredge-up阶段, 因此在EAGB末尾的CO核质量到不了Mc_bagb
-            if aj < tscls[13]:
+            if self.aj < self.tscls[13]:
                 self.type = 5
-                mc = mcbagb
-                mc_CO = mcgbtf(aj, GB[8], GB, tscls[7], tscls[8], tscls[9])
+                self.mass_core = mcbagb
+                mc_CO = self.mcgbtf(self.age, self.GB[8], self.GB, self.tscls[7], self.tscls[8], self.tscls[9])
                 # 相应光度根据 L-mc_CO 关系变化
-                lum = mc_to_lum_gb(mc_CO, GB)
+                self.L = self.mc_to_lum_gb(mc_CO, self.GB)
                 # 如果当前核质量大于恒星总质量, 说明包层已经损失, 但由于氦核没有全部燃烧完, 因此成为post-HeMS 裸氦星
-                if mc >= mt:
+                if self.mass_core >= self.mass:
                     self.type = 9
-                    mass = mc
-                    mt = mc
-                    (tm, tn, tscls, lums, GB) = star(self.type, mass, mt, zcnsts)
-                    if mc_CO <= GB[7]:
-                        aj = tscls[4] - (1.0 / ((GB[5] - 1.0) * GB[8] * GB[4])) * (mc_CO ** (1.0 - GB[5]))
+                    self.mass0 = self.mass_core
+                    self.mass = self.mass_core
+                    star(self)
+                    if mc_CO <= self.GB[7]:
+                        self.age = self.tscls[4] - (1.0 / ((self.GB[5] - 1.0) * self.GB[8] * self.GB[4])) * (mc_CO ** (1.0 - self.GB[5]))
                     else:
-                        aj = tscls[5] - (1.0 / ((GB[6] - 1.0) * GB[8] * GB[3])) * (mc_CO ** (1.0 - GB[6]))
-                    aj = max(aj, tm)
+                        self.age = self.tscls[5] - (1.0 / ((self.GB[6] - 1.0) * self.GB[8] * self.GB[3])) * (mc_CO ** (1.0 - self.GB[6]))
+                    self.age = max(self.age, self.tm)
                     envelop_lost = True
 
             # TPAGB 阶段, Mc = Mc_CO, 如果能达到 Mcmax, 则根据此时的 Mc 演化成不同的恒星类型
             else:
                 self.type = 6
-                mc_CO_1 = mcgbtf(tscls[13], GB[2], GB, tscls[10], tscls[11], tscls[12])  # TPAGB开始时的CO核质量
-                mc_CO = mcgbtf(aj, GB[2], GB, tscls[10], tscls[11], tscls[12])         # TPAGB开始后没有三次挖掘时的CO核质量
-                lum = mc_to_lum_gb(mc_CO, GB)
+                # TPAGB开始时的CO核质量
+                mc_CO_1 = self.mcgbtf(self.tscls[13], self.GB[2], self.GB, self.tscls[10], self.tscls[11], self.tscls[12])
+                # TPAGB开始后没有三次挖掘时的CO核质量
+                mc_CO = self.mcgbtf(self.age, self.GB[2], self.GB, self.tscls[10], self.tscls[11], self.tscls[12])
+                lum = self.mc_to_lum_gb(mc_CO, self.GB)
                 # 由于三次挖掘(3rd Dredge-up), Mc的增长变缓
                 f_lambda = min(0.9, 0.3 + 0.001 * mass ** 5)
                 mc_CO = mc_CO - f_lambda * (mc_CO - mc_CO_1)
-                mc = mc_CO
+                self.mass_core = mc_CO
                 # 如果当前核质量大于恒星总质量, 说明包层已经损失, 由于只剩下了CO/ONe核, 根据简并与否由不同的结局(详见处理氦星时的情况)
-                if mc >= mt:
-                    aj = 0
+                if self.mass_core >= self.mass:
+                    self.age = 0
                     # 简并CO核质量未达到 mch , 只能变为CO白矮星
                     if mcbagb < 1.83:
                         self.type = 11
-                        mt = mc
+                        self.mass = self.mass_core
                     # 半简并的CO核(非中心)点燃形成简并的ONe核, 简并ONe核质量未能达到电子俘获超新星临界质量 Mecs, 只能成为ONe白矮星
                     elif mcbagb < 2.25:
                         self.type = 12
-                        mt = mc
+                        self.mass = self.mass_core
                     # 非简并的CO核发生超新星爆炸(这种大质量的恒星一般在进入TPAGB之前就发生了SN, 所以下面这个分支大概率用不到)
                     else:
-                        (self.type, mt) = SN_remnant(mt, mc, mass, kick)
+                        (self.type, mt) = SN_remnant(self.mass, self.mass_core, mcbagb, kick)
 
                     # 改变恒星类型之后, 让新恒星的初始质量等于当前质量
-                    mass = mt
+                    self.mass0 = self.mass
                     envelop_lost = True
 
             # 检验CO/ONe核质量是否超过总质量或超新星爆炸极限质量

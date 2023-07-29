@@ -1057,12 +1057,13 @@ def evolve(kstar, mass0, mass, rad, lumin, massc, radc, menv, renv,
                                 kst = kstar[j1]
                                 mass[j1] = mass[j2] + dm2
                                 mass[j2] = 0.0
+                                kstar[j2] = kst
                             else:
                                 mass[j2] = mass[j2] + dm2
-                                (massc[j2], mass[j2], kst, mass0[j2], aj[j2]) = gntage(
-                                    massc[j2], mass[j2], kst, zcnsts, mass0[j2], aj[j2])
+                                kstar[j2] = kst
+                                (massc[j2], mass[j2], kstar[j2], mass0[j2], aj[j2]) = gntage(
+                                    massc[j2], mass[j2], kstar[j2], zcnsts, mass0[j2], aj[j2])
                                 epoch[j2] = tphys - aj[j2]
-                            kstar[j2] = kst
                         else:
                             # The neutron star or black hole simply accretes at the Eddington rate.
                             dm2 = min(dme * taum / tb, dm1)

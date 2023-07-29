@@ -134,10 +134,14 @@
 # # plt.title('Comparison of Random Number Generation')
 # # plt.show()
 #
-#
-#
-#
-#
+import numpy as np
+
+a = np.array([1, 2])
+print(a[a[0]])
+
+
+
+
 # #
 # #
 # # if __name__ == '__main__':

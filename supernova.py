@@ -80,7 +80,7 @@ def SN_kick(kw, m1, m1_new, m2, ecc, sep, kick, index):
 # 对于各种超新星模型, 输出不同的致密星类型(NS/BH)和当前质量
 # 输入变量: mt 为当前质量, mc 为SN爆发前的CO核质量, mcbagb 为bagb时的核质量(包括He+CO核)
 @conditional_njit()
-def SN_remnant(mt, mc, mcbagb, kick):
+def SN_remnant(self, mt, mc, mcbagb, kick):
     if SNtype == 1:     # rapid SN, origin from Fryer et al. 2012, ApJ, 749, 91
         mproto = 1.0
         if mc < 2.5:
@@ -88,25 +88,25 @@ def SN_remnant(mt, mc, mcbagb, kick):
         elif 2.5 <= mc < 6:
             mfb = 0.286 * mc - 0.514
         elif 6 <= mc < 7:
-            mfb = mt - mproto
+            mfb = self.mass - mproto
         elif 7 <= mc < 11:
-            a1 = 0.25 - 1.275 / (mt - mproto)
+            a1 = 0.25 - 1.275 / (self.mass - mproto)
             b1 = -11.0 * a1 + 1.0
-            mfb = (mt - mproto) * (a1 * mc + b1)
+            mfb = (self.mass - mproto) * (a1 * mc + b1)
         else:
-            mfb = mt - mproto
-        kick.f_fb = mfb / (mt - mproto)
+            mfb = self.mass - mproto
+        kick.f_fb = mfb / (self.mass - mproto)
         mrem_bar = mfb + mproto                                         # 遗迹重子质量
         mrem1 = -6.6667 + 0.6667 * (100 + 30 * mrem_bar) ** 0.5         # 中子星引力质量
         mrem2 = 0.9 * mrem_bar                                          # 黑洞引力质量
         # 中子星
         if mrem1 <= mxns:
             kw = 13
-            mt = mrem1
+            self.mass = mrem1
         # 黑洞
         else:
             kw = 14
-            mt = mrem2
+            self.mass = mrem2
     elif SNtype == 2:     # delayed SN, origin from Fryer et al. 2012, ApJ, 749, 91
         if mc <= 3.5:
             mproto = 1.2
@@ -121,12 +121,12 @@ def SN_remnant(mt, mc, mcbagb, kick):
         elif 2.5 < mc <= 3.5:
             mfb = 0.5 * mc - 1.05
         elif 3.5 < mc <= 11.0:
-            a2 = 0.133 - 0.093 / (mt - mproto)
+            a2 = 0.133 - 0.093 / (self.mass - mproto)
             b2 = -11.0 * a2 + 1.0
-            mfb = (mt - mproto) * (a2 * mc + b2)
+            mfb = (self.mass - mproto) * (a2 * mc + b2)
         else:
-            mfb = mt - mproto
-        kick.f_fb = mfb / (mt - mproto)
+            mfb = self.mass - mproto
+        kick.f_fb = mfb / (self.mass - mproto)
         mrem_bar = mfb + mproto                                         # 遗迹重子质量
         mrem1 = -6.6667 + 0.6667 * (100 + 30 * mrem_bar) ** 0.5         # 中子星引力质量
         mrem2 = 0.9 * mrem_bar                                          # 黑洞引力质量
