@@ -4,53 +4,53 @@ from utils import conditional_njit
 
 # 确定恒星演化的更新步长
 @conditional_njit()
-def timestep(kw, age, tm, tn, tscls, dt):
-    # 输入: kw, age, tm, tn, tscls, dt
+def timestep(self):   #self.type, self.age, self.tm, self.tn, self.tscls, dt):
+    # 输入: self.type, self.age, self.tm, self.tn, self.tscls, dt
     # 输出: dt, dtr(只有当确定致密星的下一步演化时长需要用到旧的步长)
 
     # pts1 = 0.05      MS
     # pts2 = 0.01      CHeB, GB, AGB, HeGB
     # pts3 = 0.02      HG, HeMS
-    if kw <= 1:
-        dt = pts1 * tm
-        dtr = tm - age
-    elif kw == 2:
-        dt = pts3 * (tscls[1] - tm)      # 【更改】把这里的 pts1 改成 pts3, 缩短 HG 的演化步长
-        dtr = tscls[1] - age
-    elif kw == 3:
-        if age < tscls[6]:
-            dt = pts2 * (tscls[4] - age)
+    if self.type <= 1:
+        self.dt = pts1 * self.tm
+        dtr = self.tm - self.age
+    elif self.type == 2:
+        self.dt = pts3 * (self.tscls[1] - self.tm)      # 【更改】把这里的 pts1 改成 pts3, 缩短 HG 的演化步长
+        dtr = self.tscls[1] - self.age
+    elif self.type == 3:
+        if self.age < self.tscls[6]:
+            self.dt = pts2 * (self.tscls[4] - self.age)
         else:
-            dt = pts2 * (tscls[5] - age)
-        dtr = min(tscls[2], tn) - age
-    elif kw == 4:
-        dt = pts2 * tscls[3]
-        dtr = min(tn, tscls[2] + tscls[3]) - age
-    elif kw == 5:
-        if age < tscls[9]:
-            dt = pts3 * (tscls[7] - age)
+            self.dt = pts2 * (self.tscls[5] - self.age)
+        dtr = min(self.tscls[2], self.tn) - self.age
+    elif self.type == 4:
+        self.dt = pts2 * self.tscls[3]
+        dtr = min(self.tn, self.tscls[2] + self.tscls[3]) - self.age
+    elif self.type == 5:
+        if self.age < self.tscls[9]:
+            self.dt = pts3 * (self.tscls[7] - self.age)
         else:
-            dt = pts3 * (tscls[8] - age)
-        dtr = min(tn, tscls[13]) - age
-    elif kw == 6:
-        if age < tscls[12]:
-            dt = pts3 * (tscls[10] - age)
+            self.dt = pts3 * (self.tscls[8] - self.age)
+        dtr = min(self.tn, self.tscls[13]) - self.age
+    elif self.type == 6:
+        if self.age < self.tscls[12]:
+            self.dt = pts3 * (self.tscls[10] - self.age)
         else:
-            dt = pts3 * (tscls[11] - age)
-        dt = min(dt, 0.005)
-        dtr = tn - age
-    elif kw == 7:
-        dt = pts1 * tm
-        dtr = tm - age
-    elif kw == 8 or kw == 9:
-        if age < tscls[6]:
-            dt = pts2 * (tscls[4] - age)
+            self.dt = pts3 * (self.tscls[11] - self.age)
+        self.dt = min(self.dt, 0.005)
+        dtr = self.tn - self.age
+    elif self.type == 7:
+        self.dt = pts1 * self.tm
+        dtr = self.tm - self.age
+    elif self.type == 8 or self.type == 9:
+        if self.age < self.tscls[6]:
+            self.dt = pts2 * (self.tscls[4] - self.age)
         else:
-            dt = pts2 * (tscls[5] - age)
-        dtr = tn - age
+            self.dt = pts2 * (self.tscls[5] - self.age)
+        dtr = self.tn - self.age
     else:
-        dt = max(0.1, dt * 10.0)
-        dt = min(dt, 5.0e2)
-        dtr = dt
+        self.dt = max(0.1, self.dt * 10.0)
+        self.dt = min(self.dt, 5.0e2)
+        dtr = self.dtdt
 
-    return dt, dtr
+    return dtr
