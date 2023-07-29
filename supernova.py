@@ -80,64 +80,64 @@ def SN_kick(kw, m1, m1_new, m2, ecc, sep, kick, index):
 # 对于各种超新星模型, 输出不同的致密星类型(NS/BH)和当前质量
 # 输入变量: mt 为当前质量, mc 为SN爆发前的CO核质量, mcbagb 为bagb时的核质量(包括He+CO核)
 @conditional_njit()
-def SN_remnant(self, mt, mc, mcbagb, kick):
+def SN_remnant(self, mcbagb):
     if SNtype == 1:     # rapid SN, origin from Fryer et al. 2012, ApJ, 749, 91
         mproto = 1.0
-        if mc < 2.5:
+        if self.mass_core < 2.5:
             mfb = 0.2
-        elif 2.5 <= mc < 6:
-            mfb = 0.286 * mc - 0.514
-        elif 6 <= mc < 7:
+        elif 2.5 <= self.mass_core < 6:
+            mfb = 0.286 * self.mass_core - 0.514
+        elif 6 <= self.mass_core < 7:
             mfb = self.mass - mproto
-        elif 7 <= mc < 11:
+        elif 7 <= self.mass_core < 11:
             a1 = 0.25 - 1.275 / (self.mass - mproto)
             b1 = -11.0 * a1 + 1.0
-            mfb = (self.mass - mproto) * (a1 * mc + b1)
+            mfb = (self.mass - mproto) * (a1 * self.mass_core + b1)
         else:
             mfb = self.mass - mproto
-        kick.f_fb = mfb / (self.mass - mproto)
+        self.f_fb = mfb / (self.mass - mproto)
         mrem_bar = mfb + mproto                                         # 遗迹重子质量
         mrem1 = -6.6667 + 0.6667 * (100 + 30 * mrem_bar) ** 0.5         # 中子星引力质量
         mrem2 = 0.9 * mrem_bar                                          # 黑洞引力质量
         # 中子星
         if mrem1 <= mxns:
-            kw = 13
+            self.type = 13
             self.mass = mrem1
         # 黑洞
         else:
-            kw = 14
+            self.type = 14
             self.mass = mrem2
     elif SNtype == 2:     # delayed SN, origin from Fryer et al. 2012, ApJ, 749, 91
-        if mc <= 3.5:
+        if self.mass_core <= 3.5:
             mproto = 1.2
-        elif 3.5 < mc <= 6.0:
+        elif 3.5 < self.mass_core <= 6.0:
             mproto = 1.3
-        elif 6.0 < mc <= 11.0:
+        elif 6.0 < self.mass_core <= 11.0:
             mproto = 1.4
         else:
             mproto = 1.6
-        if mc <= 2.5:
+        if self.mass_core <= 2.5:
             mfb = 0.2
-        elif 2.5 < mc <= 3.5:
-            mfb = 0.5 * mc - 1.05
-        elif 3.5 < mc <= 11.0:
+        elif 2.5 < self.mass_core <= 3.5:
+            mfb = 0.5 * self.mass_core - 1.05
+        elif 3.5 < self.mass_core <= 11.0:
             a2 = 0.133 - 0.093 / (self.mass - mproto)
             b2 = -11.0 * a2 + 1.0
-            mfb = (self.mass - mproto) * (a2 * mc + b2)
+            mfb = (self.mass - mproto) * (a2 * self.mass_core + b2)
         else:
             mfb = self.mass - mproto
-        kick.f_fb = mfb / (self.mass - mproto)
+        self.f_fb = mfb / (self.mass - mproto)
         mrem_bar = mfb + mproto                                         # 遗迹重子质量
         mrem1 = -6.6667 + 0.6667 * (100 + 30 * mrem_bar) ** 0.5         # 中子星引力质量
         mrem2 = 0.9 * mrem_bar                                          # 黑洞引力质量
         # 中子星
         if mrem1 <= mxns:
-            kw = 13
-            mt = mrem1
+            self.type = 13
+            self.mass = mrem1
         # 黑洞
         else:
-            kw = 14
-            mt = mrem2
+            self.type = 14
+            self.mass = mrem2
     else:               # stochastic SN, origin from Mandel et al. 2020, MNRAS 499, 3214–3221
         m11 = 2.0
         m22 = 3.0
@@ -148,56 +148,56 @@ def SN_remnant(self, mt, mc, mcbagb, kick):
         p1 = random.random()
         p2 = random.random()
         # 计算黑洞形成时物质完全回落(complete fallback)的概率
-        if m11 <= mc < m44:
-            pcf = (mc - m11) / (m44 - m11)
+        if m11 <= self.mass_core < m44:
+            pcf = (self.mass_core - m11) / (m44 - m11)
         else:
             pcf = 1.0
         # 中子星
-        if mc < m11:
+        if self.mass_core < m11:
             mean0 = 1.2
             sigma0 = 0.02
-            kw = 13
-            mt = max(1.13, random.gauss(mean0, sigma0))
+            self.type = 13
+            self.mass = max(1.13, random.gauss(mean0, sigma0))
         # 中子星或黑洞
-        elif m11 <= mc < m33:
+        elif m11 <= self.mass_core < m33:
             # 计算遗迹是黑洞的概率
-            pbh = (mc - m11) / (m33 - m11)
+            pbh = (self.mass_core - m11) / (m33 - m11)
             # 黑洞
             if p1 <= pbh:
-                kw = 14
+                self.type = 14
                 # 完全回落
                 if p2 <= pcf:
-                    mt = mcbagb
+                    self.mass = mcbagb
                 # 不完全回落
                 else:
-                    mt = max(2.0, random.gauss(meanbh * mc, sigmabh))
+                    self.mass = max(2.0, random.gauss(meanbh * self.mass_core, sigmabh))
             # 中子星
             else:
-                kw = 13
-                if m11 <= mc < m22:
-                    mean0 = 1.4 + 0.5 * (mc - m11) / (m22 - m11)
+                self.type = 13
+                if m11 <= self.mass_core < m22:
+                    mean0 = 1.4 + 0.5 * (self.mass_core - m11) / (m22 - m11)
                     sigma0 = 0.05
                 else:
-                    mean0 = 1.4 + 0.4 * (mc - m22) / (m33 - m22)
+                    mean0 = 1.4 + 0.4 * (self.mass_core - m22) / (m33 - m22)
                     sigma0 = 0.05
-                mt = max(1.13, random.gauss(mean0, sigma0))
+                self.mass = max(1.13, random.gauss(mean0, sigma0))
         # 黑洞
         else:
-            kw = 14
+            self.type = 14
             # 完全回落
             if p2 <= pcf:
-                mt = mcbagb
+                self.mass = mcbagb
             # 不完全回落
             else:
-                mt = max(2.0, random.gauss(meanbh * mc, sigmabh))
+                self.mass = max(2.0, random.gauss(meanbh * self.mass_core, sigmabh))
         # 对于 stochastic SN, 速度踢服从一定的正态分布(高斯分布)
-        if kw == 13:
-            kick.meanvk = 520.0 * (mc - mt) / mt
-            kick.sigmavk = 0.3 * kick.meanvk
-        elif kw == 14:
-            kick.meanvk = 200.0 * max((mc - mt) / mt, 0.0)
-            kick.sigmavk = 0.3 * kick.meanvk
-    return kw, mt
+        if self.type == 13:
+            self.meanvk = 520.0 * (self.mass_core - self.mass) / self.mass
+            self.sigmavk = 0.3 * self.meanvk
+        elif self.type == 14:
+            self.meanvk = 200.0 * max((self.mass_core - self.mass) / self.mass, 0.0)
+            self.sigmavk = 0.3 * self.meanvk
+    return 0
 
 
 
