@@ -14,7 +14,7 @@ from utils import conditional_njit
 # rc = core radius (not really needed...)
 # aj = age
 # tm = main-sequence lifetime
-# ltms = luminosity at TMS, lums[2]
+# ltms = self.lums[2] = luminosity at TMS, lums[2]
 # lbgb = luminosity at BGB, lums[3]
 # lhei = luminosity at He ignition, lums[4]
 # rzams = radius at ZAMS
@@ -24,7 +24,7 @@ from utils import conditional_njit
 
 
 @conditional_njit()
-def mrenv(self, ltms, lbgb, lhei, rzams, rtms, rg, k2e):
+def mrenv(self, rzams, rtms, rg):
     logm = np.log10(self.mass0)
     A = min(0.81, max(0.68, 0.68 + 0.4 * logm))
     C = max(-2.5, min(-1.5, -2.5 + 5.0 * logm))
@@ -48,9 +48,9 @@ def mrenv(self, ltms, lbgb, lhei, rzams, rtms, rg, k2e):
         logmt = np.log10(self.mass)
         F = 0.208 + 0.125 * logmt - 0.035 * logmt ** 2
         B = 1e4 * self.mass ** (3.0 / 2.0) / (1.0 + 0.1 * self.mass ** (3.0 / 2.0))
-        x = ((self.L - lbgb) / B) ** 2
-        y = (F - 0.033 * np.log10(lbgb)) / k2bgb - 1.0
-        k2g = (F - 0.033 * np.log10(self.L) + 0.4 * x) / (1.0 + y * (lbgb / self.L) + x)
+        x = ((self.L - self.lums[3]) / B) ** 2
+        y = (F - 0.033 * np.log10(self.lums[3])) / k2bgb - 1.0
+        k2g = (F - 0.033 * np.log10(self.L) + 0.4 * x) / (1.0 + y * (self.lums[3] / self.L) + x)
     # Rough fit for HeGB stars...
     elif self.type == 9:
         B = 3e4 * self.mass ** (3.0 / 2.0)
@@ -63,9 +63,9 @@ def mrenv(self, ltms, lbgb, lhei, rzams, rtms, rg, k2e):
         menvg = 0.5
         renvg = 0.65
     # FGB stars still close to the BGB do not yet have a fully developed CE.
-    elif self.type == 3 and self.L < 3.0 * lbgb:
-        x = min(3.0, lhei / lbgb)
-        tau = max(0.0, min(1.0, (x - self.L / lbgb) / (x - 1.0)))
+    elif self.type == 3 and self.L < 3.0 * self.lums[3]:
+        x = min(3.0, self.lums[4] / self.lums[3])
+        tau = max(0.0, min(1.0, (x - self.L / self.lums[3]) / (x - 1.0)))
         menvg = 1.0 - 0.5 * tau ** 2
         renvg = 1.0 - 0.35 * tau ** 2
     else:
@@ -90,14 +90,15 @@ def mrenv(self, ltms, lbgb, lhei, rzams, rtms, rg, k2e):
             tau = self.age / self.tm
             k2e = 0.080 - 0.030 * tau
         # Rough fit for HeHG stars.
-        elif self.type <= 9:
+        # 致密星不会进入当前程序, 之前为elif type<=9
+        else:
             k2e = 0.08 * rzams / self.R
 
         # tauenv measures proximity to the Hayashi track in terms of Teff.
         # If tauenv > 0 then an appreciable convective envelope is present, and k^2 needs to be modified.
         if self.type <= 2:
             teff = np.sqrt(np.sqrt(self.L) / self.R)
-            tebgb = np.sqrt(np.sqrt(lbgb) / rg)
+            tebgb = np.sqrt(np.sqrt(self.lums[3]) / rg)
             tauenv = max(0.0, min(1.0, (tebgb / teff - A) / (1.0 - A)))
         else:
             tauenv = max(0.0, min(1.0, (np.sqrt(self.R / rg) - A) / (1.0 - A)))
@@ -112,7 +113,7 @@ def mrenv(self, ltms, lbgb, lhei, rzams, rtms, rg, k2e):
                 renvz = 0.4 * x ** (1.0 / 4.0) + 0.6 * x ** 10
                 y = 2.0 + 8.0 * x
                 # Values for CE mass and radius at start of the HG.
-                tetms = np.sqrt(np.sqrt(ltms) / rtms)
+                tetms = np.sqrt(np.sqrt(self.lums[2]) / rtms)
                 tautms = max(0.0, min(1.0, (tebgb / tetms - A) / (1.0 - A)))
                 menvt = menvg * tautms ** 5
                 renvt = renvg * tautms ** (5.0 / 4.0)
@@ -141,4 +142,6 @@ def mrenv(self, ltms, lbgb, lhei, rzams, rtms, rg, k2e):
     self.mass_envelop = max(menv, 1e-10)
     self.radius_envelop = max(renv, 1e-10)
 
-    return k2e
+    # return k2e
+    self.k2 = k2e
+    return 0

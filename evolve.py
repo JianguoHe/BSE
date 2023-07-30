@@ -1235,6 +1235,7 @@ def evolve(kstar, mass0, mass, rad, lumin, massc, radc, menv, renv,
                             m1ce = mass[j1]
                             m2ce = mass[j2]
                             (mass0, mass, aj, kstar) = mix(mass0, mass, aj, kstar, zcnsts)
+                            # 230730 mix.py修改为输入两个star类，无输出，调用star的属性获取信息。
                             dm1 = m1ce - mass[j1]
                             dm2 = mass[j2] - m2ce
                             # Next step should be made without changing the time.
