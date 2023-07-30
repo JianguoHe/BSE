@@ -24,7 +24,7 @@ from utils import conditional_njit
 
 
 @conditional_njit()
-def mrenv(self, rzams, rtms, rg, k2e):
+def mrenv(self, rzams, rtms, rg):
     logm = np.log10(self.mass0)
     A = min(0.81, max(0.68, 0.68 + 0.4 * logm))
     C = max(-2.5, min(-1.5, -2.5 + 5.0 * logm))
@@ -90,7 +90,8 @@ def mrenv(self, rzams, rtms, rg, k2e):
             tau = self.age / self.tm
             k2e = 0.080 - 0.030 * tau
         # Rough fit for HeHG stars.
-        elif self.type <= 9:
+        # 致密星不会进入当前程序, 之前为elif type<=9
+        else:
             k2e = 0.08 * rzams / self.R
 
         # tauenv measures proximity to the Hayashi track in terms of Teff.
