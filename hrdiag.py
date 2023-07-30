@@ -4,7 +4,6 @@ from star import star
 from mrenv import mrenv
 from supernova import SN_remnant
 from const import wdflag, mxns, mch, Rsun, tiny, M_ECSN
-from star import star
 # from zfuncs import thook_div_tBGB, tblf, lalphaf, lbetaf, lnetaf, lpertf, lgbtf
 # from zfuncs import mc_to_lum_gb, lzhef, lpert1f, rzamsf, rtmsf, ralphaf, rbetaf, rgammaf
 # from zfuncs import rpertf, rgbf, rminf, ragbf, rzahbf, rzhef, rhehgf, rhegbf
@@ -33,9 +32,9 @@ from star import star
 # zpars   区分各种质量区间的参数
 # te：    有效温度（suppressed)
 
-
+# , kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, kick, zcnsts
 @conditional_njit()
-def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, kick, zcnsts):
+def hrdiag(self):
     # 设置常数
     mlp = 12.0
     ahe = 4            # 产能效率
@@ -47,16 +46,16 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
         rtms = self.rtmsf()
 
         # 主序和赫氏空隙两个阶段
-        if self.aj < self.tscls[1]:
-            rg = self.rgbf(self.mass, lums[3])
+        if self.age < self.tscls[1]:
+            rg = self.rgbf(self.mass, self.lums[3])
             # 主序阶段(通常认为这个阶段核质量为 0)
-            if self.aj < self.tm:
-                mc = 0.0
-                tau = aj / tm
+            if self.age < self.tm:
+                self.mass_core = 0.0
+                tau = self.age / self.tm
                 thook = self.thook_div_tBGB() * self.tscls[1]
                 epsilon = 0.01
-                tau1 = min(1.0, aj / thook)
-                tau2 = max(0.0, min(1.0, (aj - (1.0 - epsilon) * thook) / (epsilon * thook)))
+                tau1 = min(1.0, self.age / thook)
+                tau2 = max(0.0, min(1.0, (self.age - (1.0 - epsilon) * thook) / (epsilon * thook)))
 
                 # 计算主序阶段光度
                 delta_L = self.lpertf()
@@ -91,15 +90,14 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
             # 赫氏空隙阶段
             else:
                 # 计算核质量
-                mc_old = mc
                 if self.mass0 <= self.zpars[2]:
                     mcEHG = self.lum_to_mc_gb(self.lums[3])
-                elif mass <= self.zpars[3]:
+                elif self.mass0 <= self.zpars[3]:
                     mcEHG = self.mcheif(self.mass0, self.zpars[2], self.zpars[9])
                 else:
                     mcEHG = self.mcheif(self.mass0, self.zpars[2], self.zpars[10])
                 rho = self.mctmsf()
-                tau = (self.aj - self.tm) / (self.tscls[1] - self.tm)
+                tau = (self.age - self.tm) / (self.tscls[1] - self.tm)
                 mc_new = ((1.0 - tau) * rho + tau) * mcEHG
                 self.mass_core = max(self.mass_core, mc_new)
                 # 检验核质量是否达到当前的总质量(如果达到，则说明包层已被剥离，氦核根据是否简并分别演化为氦主序或氦白矮星)
@@ -128,7 +126,7 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
                     # 大质量的 HG 末尾在 He 点燃时(at Rmin)
                     else:
                         # 首先算一下 blue loop 阶段的最小半径
-                        rmin = self.rminf(mass)
+                        rmin = self.rminf(self.mass0)
                         # 然后算一下 He 点燃时的半径
                         ry = self.ragbf(self.mass, self.lums[4], self.zpars[2])
                         rx = min(rmin, ry)
@@ -145,7 +143,7 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
         elif self.age < self.tscls[2]:
             self.type = 3
             # 计算光度和半径
-            self.L = self.lgbtf(GB[1])
+            self.L = self.lgbtf(self.GB[1])
             self.R = self.rgbf(self.mass, self.L)
             rg = self.R
             # 计算核质量(对于核是否简并有不同的核质量公式)
@@ -154,7 +152,7 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
                 self.mass_core = self.lum_to_mc_gb(self.L)
             # 非简并核的质量在GB阶段只会轻微的增加
             else:
-                tau = (aj - tscls[1])/(tscls[2] - tscls[1])
+                tau = (self.age - self.tscls[1])/(self.tscls[2] - self.tscls[1])
                 mc_bgb = self.mcheif(self.mass0, self.zpars[2], self.zpars[9])
                 mc_hei = self.mcheif(self.mass0, self.zpars[2], self.zpars[10])
                 self.mass_core = mc_bgb + (mc_hei - mc_bgb) * tau
@@ -181,7 +179,7 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
 
             # 计算核质量
             if self.mass0 <= self.zpars[2]:
-                mchei = self.lum_to_mc_gb(lums[4])
+                mchei = self.lum_to_mc_gb(self.lums[4])
             else:
                 mchei = self.mcheif(self.mass0, self.zpars[2], self.zpars[10])
             tau = (self.age - self.tscls[2]) / self.tscls[3]
@@ -239,7 +237,7 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
                     rg = rg + tau * (ry - rg)
                 else:
                     self.R = self.ragbf(self.mass, self.L, self.zpars[2])
-                    rg = r
+                    rg = self.R
 
             # 中等质量恒星, CHeB consists of a RG phase (before tloop) and a blue loop (after tloop).
             else:
@@ -304,22 +302,22 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
 
             # EAGB 阶段, Mc = Mc_He + Mc_CO = Mc_bagb(常数), 而Mc_CO 随时间不断增长, 直到全部的He核转为CO核, EAGB结束
             # 对于0.8 < Mc_bagb < 2.25的恒星, 会有一个second dredge-up阶段, 因此在EAGB末尾的CO核质量到不了Mc_bagb
-            if self.aj < self.tscls[13]:
+            if self.age < self.tscls[13]:
                 self.type = 5
                 self.mass_core = mcbagb
-                mc_CO = self.mcgbtf(self.age, self.GB[8], self.GB, self.tscls[7], self.tscls[8], self.tscls[9])
+                self.mass_co_core = self.mcgbtf(self.age, self.GB[8], self.GB, self.tscls[7], self.tscls[8], self.tscls[9])
                 # 相应光度根据 L-mc_CO 关系变化
-                self.L = self.mc_to_lum_gb(mc_CO, self.GB)
+                self.L = self.mc_to_lum_gb(self.mass_co_core, self.GB)
                 # 如果当前核质量大于恒星总质量, 说明包层已经损失, 但由于氦核没有全部燃烧完, 因此成为post-HeMS 裸氦星
                 if self.mass_core >= self.mass:
                     self.type = 9
                     self.mass0 = self.mass_core
                     self.mass = self.mass_core
                     star(self)
-                    if mc_CO <= self.GB[7]:
-                        self.age = self.tscls[4] - (1.0 / ((self.GB[5] - 1.0) * self.GB[8] * self.GB[4])) * (mc_CO ** (1.0 - self.GB[5]))
+                    if self.mass_co_core <= self.GB[7]:
+                        self.age = self.tscls[4] - (1.0 / ((self.GB[5] - 1.0) * self.GB[8] * self.GB[4])) * (self.mass_co_core ** (1.0 - self.GB[5]))
                     else:
-                        self.age = self.tscls[5] - (1.0 / ((self.GB[6] - 1.0) * self.GB[8] * self.GB[3])) * (mc_CO ** (1.0 - self.GB[6]))
+                        self.age = self.tscls[5] - (1.0 / ((self.GB[6] - 1.0) * self.GB[8] * self.GB[3])) * (self.mass_co_core ** (1.0 - self.GB[6]))
                     self.age = max(self.age, self.tm)
                     envelop_lost = True
 
@@ -329,12 +327,12 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
                 # TPAGB开始时的CO核质量
                 mc_CO_1 = self.mcgbtf(self.tscls[13], self.GB[2], self.GB, self.tscls[10], self.tscls[11], self.tscls[12])
                 # TPAGB开始后没有三次挖掘时的CO核质量
-                mc_CO = self.mcgbtf(self.age, self.GB[2], self.GB, self.tscls[10], self.tscls[11], self.tscls[12])
-                lum = self.mc_to_lum_gb(mc_CO, self.GB)
+                self.mass_co_core = self.mcgbtf(self.age, self.GB[2], self.GB, self.tscls[10], self.tscls[11], self.tscls[12])
+                lum = self.mc_to_lum_gb(self.mass_co_core, self.GB)
                 # 由于三次挖掘(3rd Dredge-up), Mc的增长变缓
-                f_lambda = min(0.9, 0.3 + 0.001 * mass ** 5)
-                mc_CO = mc_CO - f_lambda * (mc_CO - mc_CO_1)
-                self.mass_core = mc_CO
+                f_lambda = min(0.9, 0.3 + 0.001 * self.mass0 ** 5)
+                self.mass_co_core = self.mass_co_core - f_lambda * (self.mass_co_core - mc_CO_1)
+                self.mass_core = self.mass_co_core
                 # 如果当前核质量大于恒星总质量, 说明包层已经损失, 由于只剩下了CO/ONe核, 根据简并与否由不同的结局(详见处理氦星时的情况)
                 if self.mass_core >= self.mass:
                     self.age = 0
@@ -354,8 +352,8 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
                     self.mass0 = self.mass
                     envelop_lost = True
 
-            # 检验CO/ONe核质量是否超过总质量或超新星爆炸极限质量
-            if not envelop_lost and mc_CO >= mcmax:
+            # 检验CO/ONe核质量是否超过超新星爆炸极限质量
+            if not envelop_lost and self.mass_co_core >= mcmax:
                 self.mass_core = mcmax
                 SN_explosion = True
                 self.age = 0.0
@@ -382,6 +380,7 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
     # Naked Helium Star
     if 7 <= self.type <= 9:
         lzams = self.lzhef()
+        # 这里计算半径用的是当前质量
         rzams = self.rzhef(self.mass)
         # Main Sequence
         if self.age < self.tm:
@@ -398,7 +397,7 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
         # Helium Shell Burning
         else:
             self.type = 8
-            self.L = self.lgbtf(GB[8])
+            self.L = self.lgbtf(self.GB[8])
             self.R = self.rhehgf(self.mass, self.L, rzams, self.lums[2])
             rg = self.rhegbf(self.L)
             if self.R >= rg:
@@ -487,9 +486,9 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
             #         fac = (9000.1 * xx) ** 5.3
             #         lum = 300.0 * fac * mt * self.zpars[14] / (xx * (aj + 0.10)) ** 6.48
             # Mestel cooling
-            self.L = 635.0 * mt * self.zpars[14] / (xx * (aj + 0.1)) ** 1.4
+            self.L = 635.0 * self.mass * self.zpars[14] / (xx * (self.age + 0.1)) ** 1.4
 
-            self.R = max(1e6/Rsun, 0.0115 * np.sqrt((mch / mt) ** (2 / 3) - (mt / mch) ** (2 / 3)))
+            self.R = max(1e6/Rsun, 0.0115 * np.sqrt((mch / self.mass) ** (2 / 3) - (self.mass / mch) ** (2 / 3)))
             self.R = min(0.1, self.R)
             if self.mass < 0.0005:
                 self.R = 0.09
@@ -513,93 +512,91 @@ def hrdiag(self, kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, 
         self.L = 1.0e-10
         self.R = 4.24e-6 * self.mass
 
-    # 计算核半径、核光度以及最后形成的致密星的半径
-    tau = 0.0
+    # 计算核半径、核光度
     # 主序阶段
     if self.type <= 1 or self.type == 7:
-        rc = 0.0
+        self.radius_core = 0.0
         lc = 0.0
     # 赫氏空隙/巨星阶段
     elif 2 <= self.type <= 3:
         # 非简并的氦核
-        if mass > self.zpars[2]:
-            lc = lzhef(mc)
-            rc = self.rzhef(mc)
+        if self.mass0 > self.zpars[2]:
+            self.radius_core = self.rzhef(self.mass_core)
+            lc = self.lzhef(self.mass_core)
         # 简并氦核
         else:
+            self.radius_core = 5 * 0.0115 * np.sqrt(
+                max(1.48204e-6, (mch / self.mass_core) ** (2 / 3) - (self.mass_core / mch) ** (2 / 3)))
             if wdflag:
-                lc = 300.0 * mc * self.zpars[14] / ((ahe * 0.1) ** 1.18)
+                lc = 300.0 * self.mass_core * self.zpars[14] / ((ahe * 0.1) ** 1.18)
             else:
-                lc = 635.0 * mc * self.zpars[14] / ((ahe * 0.1) ** 1.4)
-            rc = 0.0115 * np.sqrt(max(1.48204e-6, (mch / mc) ** (2.0 / 3.0) - (mc / mch) ** (2.0 / 3.0)))
-            rc = 5.0 * rc
+                lc = 635.0 * self.mass_core * self.zpars[14] / ((ahe * 0.1) ** 1.4)
     # 水平分支
     elif self.type == 4:
-        tau = (aj - tscls[2]) / tscls[3]
-        # 先把此时的核当作是一个氦主序, 计算核的半径和光度
-        kw_temp = 7
-        (tm, tn, tscls, lums, GB) = star(kw_temp, mc, mc, zcnsts)
-        lc = lums[1] * (1.0 + 0.45 * tau + max(0.0, 0.85 - 0.08 * mc) * tau ** 2)
-        rc = self.rzhef(mc) * (1.0 + max(0.0, 0.4 - 0.22 * np.log10(mc)) * (tau - tau ** 6))
-        # 恢复恒星本身类型对应的特征光度/时标
-        (tm, tn, tscls, lums, GB) = star(kw, mass, mt, zcnsts)
+        tau = (self.age - self.tscls[2]) / self.tscls[3]
+        self.radius_core = self.rzhef(self.mass_core) * (
+                    1.0 + max(0.0, 0.4 - 0.22 * np.log10(self.mass_core)) * (tau - tau ** 6))
+        lc = self.lzhef(self.mass_core) * (1.0 + 0.45 * tau + max(0.0, 0.85 - 0.08 * self.mass_core) * tau ** 2)
     # EAGB 阶段
     elif self.type == 5:
-        # 先把此时的核当作是一个氦巨星, 计算核的半径和光度
-        kw_temp = 9
-        tbagb = tscls[2] + tscls[3]
-        if tn > tbagb:
-            tau = 3.0 * (aj - tbagb) / (tn - tbagb)
-        (tm, tn, tscls, lums, GB) = star(kw_temp, mc, mc, zcnsts)
-        lc = mc_to_lum_gb(mc_CO, GB)
-        if tau < 1.0:
-            lc = lums[2] * (lc / lums[2]) ** tau
-        rc = self.rzhef(mc)
-        rc = min(rhehgf(mc, lc, rc, lums[2]), rhegbf(lc))
+        tbagb = self.tscls[2] + self.tscls[3]
+        tau = 3.0 * (self.age - tbagb) / (self.tn - tbagb) if self.tn > tbagb else 0
+        # 保存之前的属性
+        type_temp, mass0_temp, mass_temp = self.type, self.mass0, self.mass
+
+        # 把此时的核当作是一个氦巨星, 计算核的半径和光度
+        self.type, self.mass0, self.mass = 9, self.mass_core, self.mass_core
+        star(self)
+        lc = self.mc_to_lum_gb(self.mass_co_core, self.GB)
+        lc = self.lums[2] * (lc / self.lums[2]) ** tau if tau < 1 else lc
+        rc = self.rzhef(self.mass_core)
+        self.radius_core = min(self.rhehgf(self.mass_core, lc, rc, self.lums[2]), self.rhegbf(lc))
+
         # 恢复恒星本身类型对应的特征光度/时标
-        (tm, tn, tscls, lums, GB) = star(self.type, mass, mt, zcnsts)
+        self.type, self.mass0, self.mass = type_temp, mass0_temp, mass_temp
+        star(self)
     # TPAGB/HeHG/HeGB
     elif self.type == 6 or 8 <= self.type <= 9:
+        self.radius_core = 5 * 0.0115 * np.sqrt(
+            max(1.48204e-6, (mch / self.mass_core) ** (2 / 3) - (self.mass_core / mch) ** (2 / 3)))
         if wdflag:
-            lc = 300.0 * mc * self.zpars[14] / ((aco * 0.10) ** 1.18)
+            lc = 300 * self.mass_core * self.zpars[14] / ((aco * 0.1) ** 1.18)
         else:
-            lc = 635.0 * mc * self.zpars[14] / ((aco * 0.10) ** 1.4)
-        rc = 0.01150 * np.sqrt(max(1.48204e-6, (mch / mc) ** (2.0 / 3.0) - (mc / mch) ** (2.0 / 3.0)))
-        rc = 5.0 * rc
+            lc = 635 * self.mass_core * self.zpars[14] / ((aco * 0.1) ** 1.4)
     # 致密星
     else:
+        self.radius_core = self.R
         lc = 0
-        rc = r
 
     # Perturb the luminosity and radius due to small envelope mass (except for MS star).
     if 2 <= self.type <= 9 and self.type != 7:
         kap = -0.5
         lum0 = 7e4
-        mu = ((mt - mc) / mt) * min(5.0, max(1.2, (lum / lum0) ** kap))
+        mu = ((self.mass - self.mass_core) / self.mass) * min(5.0, max(1.2, (self.L / lum0) ** kap))
         if self.type >= 8:
-            mcmax = min(mt, 1.45 * mt - 0.31)
-            mu = ((mcmax - mc) / mcmax) * 5.0
+            mcmax = min(self.mass, 1.45 * self.mass - 0.31)
+            mu = ((mcmax - self.mass_core) / mcmax) * 5.0
         if mu < 1.0:
-            lpert = lpert1f(mt, mu)
-            lum = lc * (lum / lc) ** lpert
-            if r <= rc:
+            lpert = self.lpert1f(self.mass, mu)
+            self.L = lc * (self.L / lc) ** lpert
+            if self.R <= self.radius_core:
                 rpert = 0.0
             else:
-                rpert = rpert1f(mt, mu, r, rc)
-            r = rc * (r / rc) ** rpert
-        rc = min(rc, r)
+                rpert = self.rpert1f(self.mass, mu, self.R, self.radius_core)
+            self.R = self.radius_core * (self.R / self.radius_core) ** rpert
+        self.radius_core = min(self.radius_core, self.R)
 
     # Calculate mass and radius of convective envelope, and envelope gyration radius.
     if self.type <= 9:
-        rtms = self.rtmsf()   # 【疑问】这里的rtms公式是否对氦星适用
-        rzams = rzamsf(mass, zcnsts) if self.type <= 6 else self.rzhef(mass)
-        k2 = mrenv(kw, mass, mt, mc, lum, r, rc, aj, tm, lums[2], lums[3], lums[4], rzams, rtms, rg, k2)
+        rzams = self.rzamsf() if self.type <= 6 else self.rzhef(self.mass0)
+        rtms = self.rtmsf()  # 【疑问】这里的rtms公式是否对氦星适用
+        mrenv(self, rzams, rtms, rg)
     else:
-        menv = 1.0e-10
-        renv = 1.0e-10
-        k2 = 0.21
+        self.mass_envelop = 1.0e-10
+        self.radius_envelop = 1.0e-10
+        self.k2 = 0.21
 
-    return kw, aj, mass, mt, lum, r, mc, rc, menv, renv, k2, tm, tn, tscls, lums, GB
+    return 0
 
 
 

@@ -50,9 +50,11 @@ spec = [
     ('tscls', float64[:]),                  # 到达不同阶段的时标
     ('lums', float64[:]),                   # 特征光度
     ('GB', float64[:]),                     # 巨星分支参数
-    ('f_fb', float64[:]),                   # 超新星爆炸后回落物质所占比例
-    ('meanvk', float64[:]),                 # stochastic模型下Natal Kick服从正态分布均值
-    ('sigmavk', float64[:]),                # stochastic模型下Natal Kick数值标准差
+    ('f_fb', float64),                      # 超新星爆炸后回落物质所占比例
+    ('meanvk', float64),                    # stochastic模型下Natal Kick服从正态分布均值
+    ('sigmavk', float64),                   # stochastic模型下Natal Kick数值标准差
+    ('k3', float64),                        # 恒星核的自旋角动量jspin_core=k2*omega*mc*rc**2
+    ('k2', float64),                        # 恒星包层的自旋角动量jspin_envelop=k3*omega*me*re**2
 ]
 
 
@@ -107,6 +109,8 @@ class SingleStar:
         self.f_fb = 0
         self.meanvk = 0
         self.sigmavk = 0
+        self.k3 = 0.21
+        self.k2 = 0
         zcnsts_set(self)            # 设置金属丰度相关常数
 
     # 计算表面温度
@@ -471,10 +475,8 @@ class SingleStar:
     # 估算 He星零龄主序的光度
     # [已校验] Hurley_2000: equation 6.1(77)
     def lzhef(self, m=0):
-        if m == 0:
-            lzhe = 15262 * self.mass0 ** 10.25 / (self.mass0 ** 9 + 29.54 * self.mass0 ** 7.5 + 31.18 * self.mass0 ** 6 + 0.0469)
-        else:
-            lzhe = 15262 * m ** 10.25 / (m ** 9 + 29.54 * m ** 7.5 + 31.18 * m ** 6 + 0.0469)
+        mass = self.mass0 if m == 0 else m
+        lzhe = 15262 * mass ** 10.25 / (mass ** 9 + 29.54 * mass ** 7.5 + 31.18 * mass ** 6 + 0.0469)
         return lzhe
 
     # A function to evaluate the ZAHB luminosity for LM stars. (OP 28/01/98)
