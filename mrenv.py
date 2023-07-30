@@ -141,4 +141,6 @@ def mrenv(self, rzams, rtms, rg, k2e):
     self.mass_envelop = max(menv, 1e-10)
     self.radius_envelop = max(renv, 1e-10)
 
-    return k2e
+    # return k2e
+    self.k2 = k2e
+    return 0
