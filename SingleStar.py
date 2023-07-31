@@ -538,11 +538,9 @@ class SingleStar:
     # [已校验] Hurley_2000: equation 5.3(49) 第二行有出入
     def lHeIf(self, m=0):
         mass = self.mass0 if m == 0 else m
-        if self.mass0 < self.zpars[2]:
-            lHeI = self.gbp[38] * self.mass0 ** self.gbp[39] / (1 + self.gbp[41] * np.exp(self.mass0 * self.gbp[40]))
+        if mass < self.zpars[2]:
+            lHeI = self.gbp[38] * mass ** self.gbp[39] / (1 + self.gbp[41] * np.exp(mass * self.gbp[40]))
         else:
-            lHeI = (self.gbp[42] + self.gbp[43] * self.mass0 ** 3.8) / (self.gbp[44] + self.mass0 ** 2)
-        if mass > 0:
             lHeI = (self.gbp[42] + self.gbp[43] * mass ** 3.8) / (self.gbp[44] + mass ** 2)
         return lHeI
 
@@ -718,9 +716,9 @@ class SingleStar:
     # [已校验] Hurley_2000: equation 5.2(35)
     def lgbtf(self, A):
         if self.age <= self.tscls[6]:
-            lgbt = self.GB[4] * (((self.GB[5] - 1) * A * self.GB[4] * (self.tscls[4] - t)) ** (self.GB[5] / (1 - self.GB[5])))
+            lgbt = self.GB[4] * (((self.GB[5] - 1) * A * self.GB[4] * (self.tscls[4] - self.age)) ** (self.GB[5] / (1 - self.GB[5])))
         else:
-            lgbt = self.GB[3] * (((self.GB[6] - 1) * A * self.GB[3] * (self.tscls[5] - t)) ** (self.GB[6] / (1 - self.GB[6])))
+            lgbt = self.GB[3] * (((self.GB[6] - 1) * A * self.GB[3] * (self.tscls[5] - self.age)) ** (self.GB[6] / (1 - self.GB[6])))
         return lgbt
 
     # A function to evaluate the blue-loop fraction of the He-burning lifetime for IM & HM stars  (OP 28/01/98)
@@ -733,7 +731,7 @@ class SingleStar:
             m2 = max(m2, 1e-12)
             tbl = self.gbp[64] * m1 ** self.gbp[63] + self.gbp[65] * m2 ** self.gbp[62]
         else:
-            r1 = 1 - self.rminf(self.mass0) / self.ragbf(self.mass0, self.lHeIf(), self.zpars[2], self)
+            r1 = 1 - self.rminf(self.mass0) / self.ragbf(self.mass0, self.lHeIf(), self.zpars[2])
             r1 = max(r1, 1e-12)
             tbl = self.gbp[66] * self.mass0 ** self.gbp[67] * r1 ** self.gbp[68]
         tbl = min(1, max(0, tbl))
