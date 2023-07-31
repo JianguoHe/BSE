@@ -1,8 +1,19 @@
 import numpy as np
 
 from SingleStar import SingleStar
+from BinaryStar import BinaryStar
 from star import star
 from hrdiag import hrdiag
+
+star1 = SingleStar(type=1, mass=1, Z=0.02)
+star2 = SingleStar(type=1, mass=1, Z=0.02)
+binary = BinaryStar(star1=star1, star2=star2, period=1000, eccentricity=0)
+binary.evolve()
+print(binary.sep, binary.period)
+
+
+
+
 
 # def pr(star1, type, mass, age):
 #     print("---------", type, mass, age)
@@ -90,13 +101,3 @@ from hrdiag import hrdiag
 #     print(star1.lums)
 #     print(star1.GB)
 
-# star2 = SingleStar(type=1, mass=1, Z=0.02)
-# binary = BinaryStar(star1=star1, star2=star2, period=66.8, eccentricity=0)
-# binary.evolve()
-
-
-# print(binary.sep, binary.period, binary.jorb, binary.jdot_gr)
-# print(star1.rochelobe, star2.rochelobe)
-# print(binary.state, binary.event)
-# print(star1.tm)
-# print(star2.tm)

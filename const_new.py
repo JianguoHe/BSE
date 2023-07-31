@@ -15,16 +15,17 @@ sep_max = 1e4                           # 最大轨道间距
 
 
 # 控制参数
-njit_enabled = False                # 是否使用numba.njit修饰器加速程序
-jitclass_enabled = njit_enabled    # 是否使用numba.jitclass修饰器加速程序
-ecc_scheme = 'zero'             # 初始偏心率分布模型 [option: 'zero', 'uniform', 'thermal']
-HG_survive_CE = True            # allow HG to survive CE evolution if HG_survive_CE is True
-IMF_scheme = 'Kroupa1993'       # 初始质量函数 [option: 'Kroupa1993', 'Weisz2015']
-wind_model = 'Belczynski'       # 星风质量损失模型【option: 'Hurley', 'Belczynski'】
-mass_accretion_model = 1        # 物质吸积模型(1/2/3对应于《Shao2014》中的三个物质吸积效率模型)
-mb_model = 'Hurley2002'         # 磁制动模型【'Rappaport1983', 'Hurley2002'】
-gamma_mb = 4                    # 磁制动指数
-max_WD_mass = 0.2               # 中子星白矮星稳定物质转移的最大WD质量
+njit_enabled = True                     # 是否使用numba.njit修饰器加速程序
+jitclass_enabled = njit_enabled         # 是否使用numba.jitclass修饰器加速程序
+ecc_scheme = 'zero'                     # 初始偏心率分布模型 [option: 'zero', 'uniform', 'thermal']
+HG_survive_CE = True                    # allow HG to survive CE evolution if HG_survive_CE is True
+IMF_scheme = 'Kroupa1993'               # 初始质量函数 [option: 'Kroupa1993', 'Weisz2015']
+wind_model = 'Belczynski'               # 星风质量损失模型【option: 'Hurley', 'Belczynski'】
+mass_accretion_model = 1                # 物质吸积模型(1/2/3对应于《Shao2014》中的三个物质吸积效率模型)
+mb_model = 'Hurley2002'                 # 磁制动模型【'Rappaport1983', 'Hurley2002'】
+gamma_mb = 4                            # 磁制动指数
+max_WD_mass = 0.2                       # 中子星白矮星稳定物质转移的最大WD质量
+spin_orbit_resonance = False            # 如果为真, 则恒星的初始角频率与轨道角频率相同
 
 
 # 演化参数

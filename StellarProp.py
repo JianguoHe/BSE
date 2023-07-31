@@ -1,6 +1,6 @@
 import numpy as np
 from utils import conditional_njit
-from star import star
+from StellarCal import StellarCal
 from mrenv import mrenv
 from supernova import SN_remnant
 from const import wdflag, mxns, mch, Rsun, tiny, M_ECSN
@@ -32,9 +32,9 @@ from const import wdflag, mxns, mch, Rsun, tiny, M_ECSN
 # zpars   区分各种质量区间的参数
 # te：    有效温度（suppressed)
 
-# , kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, kick, zcnsts
+# kw, aj, mass, mt, lum, r, mc, rc, k2, tm, tn, tscls, lums, GB, kick, zcnsts
 @conditional_njit()
-def hrdiag(self):
+def StellarProp(self):
     # 设置常数
     mlp = 12.0
     ahe = 4            # 产能效率
@@ -107,7 +107,7 @@ def hrdiag(self):
                         self.type = 7
                         self.age = 0.0
                         self.mass0 = self.mass
-                        star(self)
+                        StellarCal(self)
                     # 简并氦核, 则演变为零龄 HeWD
                     else:
                         self.type = 10
@@ -163,7 +163,7 @@ def hrdiag(self):
                     self.type = 7
                     self.age = 0.0
                     self.mass0 = self.mass
-                    star(self)
+                    StellarCal(self)
                 # 简并氦核, 则演变为零龄 HeWD
                 else:
                     self.type = 10
@@ -174,7 +174,7 @@ def hrdiag(self):
         elif self.age < tbagb:
             if self.type == 3 and self.mass0 <= self.zpars[2]:
                 self.mass0 = self.mass    # 这里为什么改变初始质量？不懂！
-                star(self)
+                StellarCal(self)
                 self.age = self.tscls[2]
 
             # 计算核质量
@@ -273,7 +273,7 @@ def hrdiag(self):
                 tau = (self.age - self.tscls[2]) / self.tscls[3]
                 # 把氦星的初始质量 mass 近似为当前的核质量 mt, 因为后者的实际值无法计算
                 self.mass0 = self.mass
-                star(self)
+                StellarCal(self)
                 self.age = tau * self.tm
             else:
                 self.type = 4
@@ -313,7 +313,7 @@ def hrdiag(self):
                     self.type = 9
                     self.mass0 = self.mass_core
                     self.mass = self.mass_core
-                    star(self)
+                    StellarCal(self)
                     if self.mass_co_core <= self.GB[7]:
                         self.age = self.tscls[4] - (1.0 / ((self.GB[5] - 1.0) * self.GB[8] * self.GB[4])) * (self.mass_co_core ** (1.0 - self.GB[5]))
                     else:
@@ -546,7 +546,7 @@ def hrdiag(self):
 
         # 把此时的核当作是一个氦巨星, 计算核的半径和光度
         self.type, self.mass0, self.mass = 9, self.mass_core, self.mass_core
-        star(self)
+        StellarCal(self)
         lc = self.mc_to_lum_gb(self.mass_co_core, self.GB)
         lc = self.lums[2] * (lc / self.lums[2]) ** tau if tau < 1 else lc
         rc = self.rzhef(self.mass_core)
@@ -554,7 +554,7 @@ def hrdiag(self):
 
         # 恢复恒星本身类型对应的特征光度/时标
         self.type, self.mass0, self.mass = type_temp, mass0_temp, mass_temp
-        star(self)
+        StellarCal(self)
     # TPAGB/HeHG/HeGB
     elif self.type == 6 or 8 <= self.type <= 9:
         self.radius_core = 5 * 0.0115 * np.sqrt(

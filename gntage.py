@@ -1,5 +1,5 @@
 import numpy as np
-from star import star
+from StellarCal import StellarCal
 # from zfuncs import mcheif,mcagbf,mheif,mbagbf,lum_to_mc_gb,mc_to_lum_gb,lbgbf,lbgbdf
 from utils import conditional_njit
 from const import tiny
@@ -40,7 +40,7 @@ def gntage(self):   #mc, self.mass, self.type, self.zcnsts, self.mass0, self.age
             self.type = 14
         else:
             # (tm, tn, tscls, lums, GB) = star(self.type, self.mass0, self.mass, self.zcnsts)
-            star(self)
+            StellarCal(self)
             self.age = self.tscls[13]
 
     if self.type == 5:
@@ -49,7 +49,7 @@ def gntage(self):   #mc, self.mass, self.type, self.zcnsts, self.mass0, self.age
             self.type = 14
         else:
             # (tm, tn, tscls, lums, GB) = star(self.type, self.mass0, self.mass, self.zcnsts)
-            star(self)
+            StellarCal(self)
             self.age = self.tscls[2] + self.tscls[3]
 
     while self.type == 4:
@@ -87,7 +87,7 @@ def gntage(self):   #mc, self.mass, self.type, self.zcnsts, self.mass0, self.age
                     self.mass0 = self.mass
                     self.age = 0.0
         # (tm, tn, tscls, lums, GB) = star(self.type, self.mass0, self.mass, self.zcnsts)
-        star(self)
+        StellarCal(self)
         self.age = self.tscls[2] + self.age * self.tscls[3]
         break
 
@@ -101,7 +101,7 @@ def gntage(self):   #mc, self.mass, self.type, self.zcnsts, self.mass0, self.age
         else:
             self.mass0 = self.zpars[2]
             # (tm, tn, tscls, lums, GB) = star(self.type, self.mass0, self.mass, self.zcnsts)
-            star(self)
+            StellarCal(self)
             lum = self.mc_to_lum_gb(self.mass_core,self.GB)
             j = 0
             while True:
@@ -116,13 +116,13 @@ def gntage(self):   #mc, self.mass, self.type, self.zcnsts, self.mass0, self.age
                     self.mass0 = max(self.mass0, self.mass)
                     break
         # (tm, tn, tscls, lums, self.GB) = star(self.type, self.mass0, self.mass, self.zcnsts)
-        star(self)
+        StellarCal(self)
         self.age = self.tscls[1] + 1.0e-6 * (self.tscls[2] - self.tscls[1])
 
     if self.type == 8 or self.type == 9:
         self.type = 8
         mmin = self.mass_core
-        star(self)
+        StellarCal(self)
         mcx = self.lum_to_mc_gb(self.lums[2])
         if mcx >= self.mass_core:
             self.mass0 = self.mass
@@ -131,7 +131,7 @@ def gntage(self):   #mc, self.mass, self.type, self.zcnsts, self.mass0, self.age
             f = mcx - self.mass_core
             mmax = self.mass
             for j in range(1, jmax+1):
-                star(self)
+                StellarCal(self)
                 mcy = self.lum_to_mc_gb(self.lums[2])
                 if mcy > self.mass_core:
                     break
@@ -149,7 +149,7 @@ def gntage(self):   #mc, self.mass, self.type, self.zcnsts, self.mass0, self.age
             for j in range(1, jmax+1):
                 dm = 0.5 * dm
                 mmid = self.mass0 + dm
-                star(self)
+                StellarCal(self)
                 mcy = self.lum_to_mc_gb(self.lums[2])
                 fmid = mcy - self.mass_core
                 if fmid < 0.0:
@@ -161,7 +161,7 @@ def gntage(self):   #mc, self.mass, self.type, self.zcnsts, self.mass0, self.age
                     break
             break
         # (tm, tn, tscls, lums, self.GB) = star(self.type, self.mass0, self.mass, self.zcnsts)
-        star(self)
+        StellarCal(self)
         self.age = self.tm + 1e-10 * self.tm
 
     if self.type == 14:
@@ -169,7 +169,7 @@ def gntage(self):   #mc, self.mass, self.type, self.zcnsts, self.mass0, self.age
         self.mass0 = self.mass
         mcy = self.mcagbf(self.mass0)
         self.age = self.mass_core / mcy
-        (tm, tn, tscls, lums, self.GB) = star(self.type, self.mass0, self.mass, self.zcnsts)
+        (tm, tn, tscls, lums, self.GB) = StellarCal(self.type, self.mass0, self.mass, self.zcnsts)
         if self.mass0 <= self.zpars[2]:
             mcx = self.lum_to_mc_gb(lums[4])
         else:

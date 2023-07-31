@@ -187,8 +187,19 @@ def main():
     open(target_file, 'w').close()
 
     # 并行计算演化大数量的双星系统
-    with concurrent.futures.ProcessPoolExecutor(max_workers=20) as executor:
-        results = [executor.submit(popbin, index) for index in range(num_evolve)]
+    # with concurrent.futures.ProcessPoolExecutor(max_workers=20) as executor:
+    #     results = [executor.submit(popbin, index) for index in range(num_evolve)]
+
+    try:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=20) as executor:
+            results = [executor.submit(popbin, index) for index in range(num_evolve)]
+            for future in concurrent.futures.as_completed(results):
+                try:
+                    result = future.result()
+                except Exception as e:
+                    print("Exception occurred:", e)
+    except Exception as e:
+        print("Exception occurred:", e)
 
 
 if __name__ == '__main__':

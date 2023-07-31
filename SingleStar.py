@@ -4,6 +4,8 @@ import numpy as np
 from const_new import gamma_mb, mb_model, yearsc, Zsun, neta, bwind, f_WR, f_LBV, Rsun, Teffsun
 from utils import conditional_jitclass
 from zcnst import zcnsts_set
+from StellarCal import StellarCal
+from StellarProp import StellarProp
 
 
 # Single star class
@@ -112,6 +114,19 @@ class SingleStar:
         self.k3 = 0.21
         self.k2 = 0
         zcnsts_set(self)            # 设置金属丰度相关常数
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #                                                    演化单星
+    # ------------------------------------------------------------------------------------------------------------------
+    def evolve(self):
+        # 首先保存单星的初始属性
+        self.save()
+        # 确定恒星的不同演化阶段的时标、标志性光度、巨星分支参数
+        StellarCal(self)
+        # 确定恒星的光度、半径、核质量、核半径、对流包层质量/半径/转动惯量系数
+        StellarProp(self)
+        # 跳过
+        pass
 
     # 计算表面温度
     def cal_Teff(self):

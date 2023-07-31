@@ -1,6 +1,6 @@
 import numpy as np
 from const import ktype, mch, mxns
-from star import star
+from StellarCal import StellarCal
 from gntage import gntage
 from utils import conditional_njit
 
@@ -132,8 +132,8 @@ def mix(star1, star2):   #mass0, mass, aj, kstar, zcnsts):
 
 
     icase = ktype[int(star1.type), int(star2.type)]
-    star(star1)
-    star(star2)
+    StellarCal(star1)
+    StellarCal(star2)
     if star1.type == 10 and star1.mass < 0.05:
         icase = star2.type
         if star2.type <= 1:
@@ -166,7 +166,7 @@ def mix(star1, star2):   #mass0, mass, aj, kstar, zcnsts):
         if star1.type == 7:
             kw = 7
         star1.type, star1.mass0, star1.mass = kw, mass03, mass3
-        star(star1)
+        StellarCal(star1)
         tm3 = star1.tm
         tn = star1.tn
         tscls = star1.tscls
@@ -187,7 +187,7 @@ def mix(star1, star2):   #mass0, mass, aj, kstar, zcnsts):
         # (mc3, mass3, kw, mass03, age3) = gntage(mc3, mass3, kw, zcnsts, mass03, age3)
     elif icase == 7:
         # (tm3, tn, tscls, lums, GB) = star(kw, mass03, mass3, zcnsts)
-        star(star1)
+        StellarCal(star1)
         tm3 = star1.tm
         age3 = tm3 * (star2.age * star2.mass / star2.tm) / mass3
     elif icase <= 12:
@@ -218,7 +218,7 @@ def mix(star1, star2):   #mass0, mass, aj, kstar, zcnsts):
         kw = 1
         mass03 = mass3
     star1.type, star1.mass0, star1.mass, star1.mass_core, star1.age = type_temp, mass0_temp, mass_temp, masscore_temp, age_temp
-    star(star1)
+    StellarCal(star1)
     star1.type, star1.mass0, star1.mass, star1.age = kw, mass03, mass3, age3
     star2.type, star2.mass = 15, 0.0
 

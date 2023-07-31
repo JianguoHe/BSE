@@ -2,11 +2,12 @@ from numba import float64, int64, types
 from numba.experimental import jitclass
 import numpy as np
 from const_new import alpha_wind, beta_wind
-from const_new import wind_model, acc1, yeardy, sep_to_period, period_to_sep, mu_wind
+from const_new import wind_model, acc1, yeardy, sep_to_period, period_to_sep, mu_wind, spin_orbit_resonance
 from SingleStar import SingleStar
 from utils import conditional_jitclass
 from utils import rochelobe
-from star import star
+from StellarCal import StellarCal
+from StellarProp import StellarProp
 
 
 # Binary star class
@@ -44,7 +45,7 @@ spec = [
 
 @conditional_jitclass(spec)
 class BinaryStar:
-    def __init__(self, star1, star2, eccentricity=0, separation=0, period=0, dt=0,
+    def __init__(self, star1, star2, eccentricity=0, separation=0, period=0, omega=0, dt=0,
                  jdot=0, jdot_wind=0, jdot_gr=0, jdot_mb=0, edot=0, edot_wind=0, edot_gr=0, edot_tide=0,
                  state='detached', event=None, max_time=10000, time=0, max_step=20000, step=0):
         self.star1 = star1
@@ -52,8 +53,8 @@ class BinaryStar:
         self.totalmass = star1.mass + star2.mass
         self.Z = star1.Z
         self.ecc = eccentricity
-        self.sep, self.period = self._set_orbital_parameter(separation, period)
-        self.omega = 2 * np.pi / self.period * yeardy
+        self._set_orbital_parameter(separation, period)
+        self.omega = 2 * np.pi / self.period if spin_orbit_resonance else omega
         self.jorb = self._set_jorb()
         self.dt = dt
         self.q1 = star1.mass / star2.mass
@@ -77,9 +78,52 @@ class BinaryStar:
         self._set_ktype()
 
     # ------------------------------------------------------------------------------------------------------------------
+    #                                                    演化双星
+    # ------------------------------------------------------------------------------------------------------------------
+    def evolve(self):
+        # 首先保存双星的初始属性
+        self.save()
+
+        # 确定两颗恒星的不同演化阶段的时标、标志性光度、巨星分支参数
+        StellarCal(self.star1)
+        StellarCal(self.star2)
+
+        # 确定两颗恒星的光度、半径、核质量、核半径、对流包层质量/半径/转动惯量系数
+        StellarProp(self.star1)
+        StellarProp(self.star2)
+
+        # 考虑星风的影响（质量/自旋角动量/轨道角动量的减少/增加）
+        # self.steller_wind()
+        # 考虑双星的磁制动影响（自旋角动量的减少）
+        # self.star1.magnetic_braking()
+        # self.star2.magnetic_braking()
+        # 考虑引力波辐射的影响(轨道角动量的减少)
+        # self.GW_radiation()
+        # 考虑潮汐的圆化、轨道收缩和自旋 [待完善]
+
+        # 限制最大 0.2% 的轨道角动量变化
+        # self.jdot = self.jdot_wind + self.jdot_gr + self.jdot_mb
+        # self.dt = min(0.002 * self.jorb / self.jdot, self.star1.dt, self.star2.dt)
+
+        # 对于非致密星, 每次质量损失不超过包层质量, 且限制 1% [待完善]
+
+        # 更新质量和自旋
+        # self.star1.reset(self.dt)
+        # self.star2.reset(self.dt)
+
+        # 确保恒星的自旋不会瓦解 [待完善]
+
+        # 更新轨道的角动量/偏心率/半长轴/周期/角频率
+
+        # 跳过
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
     #                                                    保存当前属性
     # ------------------------------------------------------------------------------------------------------------------
     def save(self):
+        self.star1.save()
+        self.star2.save()
         self.data[self.step, 0] = self.time
         self.data[self.step, 1] = self.ecc
         self.data[self.step, 2] = self.period
@@ -93,7 +137,7 @@ class BinaryStar:
         self.data[self.step, 10] = self.edot
 
     # ------------------------------------------------------------------------------------------------------------------
-    #                                                 初始化ktype矩阵
+    #                                                  初始化ktype矩阵
     # ------------------------------------------------------------------------------------------------------------------
     # 计算轨道参数 (unit: year)
     def _set_ktype(self):
@@ -114,17 +158,16 @@ class BinaryStar:
                                [ 14,  14, 114, 114, 114, 114, 114,  14, 114, 114,  14,  14,  14,  14,  14]])
 
     # ------------------------------------------------------------------------------------------------------------------
-    #                                                    轨道参数
+    #                                                  初始化轨道参数
     # ------------------------------------------------------------------------------------------------------------------
     # 计算轨道参数 (unit: year)
     def _set_orbital_parameter(self, separation, period):
         if separation > 0:
-            period = sep_to_period * (separation ** 3 / self.totalmass) ** 0.5
-            return separation, period
+            self.sep = separation
+            self.period = sep_to_period * (self.sep ** 3 / self.totalmass) ** 0.5
         elif period > 0:
-            period = period / yeardy
-            separation = period_to_sep * (period ** 2 * self.totalmass) ** (1 / 3)
-            return separation, period
+            self.period = period / yeardy
+            self.sep = period_to_sep * (self.period ** 2 * self.totalmass) ** (1 / 3)
         else:
             raise ValueError("At least one of 'period' and 'separation' must be provided.")
 
@@ -208,34 +251,4 @@ class BinaryStar:
     def chirp_mass(self):
         return (self.star1.mass * self.star2.mass) ** 0.6 / (self.star1.mass + self.star2.mass) ** 0.2
 
-    # 演化双星
-    def evolve(self):
-        # 确定两颗恒星的不同演化阶段的时标、标志性光度、巨星分支参数
-        star(self.star1)
-        star(self.star2)
 
-        # 考虑星风的影响（质量/自旋角动量/轨道角动量的减少/增加）
-        # self.steller_wind()
-        # 考虑双星的磁制动影响（自旋角动量的减少）
-        # self.star1.magnetic_braking()
-        # self.star2.magnetic_braking()
-        # 考虑引力波辐射的影响(轨道角动量的减少)
-        # self.GW_radiation()
-        # 考虑潮汐的圆化、轨道收缩和自旋 [待完善]
-
-        # 限制最大 0.2% 的轨道角动量变化
-        # self.jdot = self.jdot_wind + self.jdot_gr + self.jdot_mb
-        # self.dt = min(0.002 * self.jorb / self.jdot, self.star1.dt, self.star2.dt)
-
-        # 对于非致密星, 每次质量损失不超过包层质量, 且限制 1% [待完善]
-
-        # 更新质量和自旋
-        # self.star1.reset(self.dt)
-        # self.star2.reset(self.dt)
-
-        # 确保恒星的自旋不会瓦解 [待完善]
-
-        # 更新轨道的角动量/偏心率/半长轴/周期/角频率
-
-        # 跳过
-        pass

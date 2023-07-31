@@ -28,8 +28,10 @@ from utils import conditional_njit
 #
 #       ------------------------------------------------------------
 # 输出 tm, tn, self.tscls, lums, GB
+
+
 @conditional_njit()
-def star(self):
+def StellarCal(self):
     # 输入 kw, mass, mt, zcnsts
 
     # 输出参数
