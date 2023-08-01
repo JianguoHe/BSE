@@ -54,8 +54,9 @@ class BinaryStar:
         self.Z = star1.Z
         self.ecc = eccentricity
         self._set_orbital_parameter(separation, period)
-        self.omega = 2 * np.pi / self.period if spin_orbit_resonance else omega
+        self.omega = 2 * np.pi / self.period
         self.jorb = self._set_jorb()
+        self._set_spin()
         self.dt = dt
         self.q1 = star1.mass / star2.mass
         self.q2 = star2.mass / star1.mass
@@ -91,6 +92,11 @@ class BinaryStar:
         # 确定两颗恒星的光度、半径、核质量、核半径、对流包层质量/半径/转动惯量系数
         StellarProp(self.star1)
         StellarProp(self.star2)
+
+        # 为双星设置合适的自旋值 [待完善]
+
+
+
 
         # 考虑星风的影响（质量/自旋角动量/轨道角动量的减少/增加）
         # self.steller_wind()
@@ -170,6 +176,12 @@ class BinaryStar:
             self.sep = period_to_sep * (self.period ** 2 * self.totalmass) ** (1 / 3)
         else:
             raise ValueError("At least one of 'period' and 'separation' must be provided.")
+
+    # 设置恒星自旋
+    def _set_spin(self):
+        if spin_orbit_resonance:
+            self.star1.spin = self.omega
+            self.star2.spin = self.omega
 
     # 计算轨道角动量
     def _set_jorb(self):

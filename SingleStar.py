@@ -790,7 +790,7 @@ class SingleStar:
             rpert = ((1 + c ** 3) * ((mu / c) ** 3) * (mu ** fac)) / (1 + (mu / c) ** 3)
         return rpert
 
-    def vrotf(self, m):
-        vrot = 330 * m ** 3.3 / (15 + m ** 3.45)
+    def vrotf(self):
+        vrot = 330 * self.mass0 ** 3.3 / (15 + self.mass0 ** 3.45)
         return vrot
 
