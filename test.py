@@ -2,8 +2,8 @@ import numpy as np
 
 from SingleStar import SingleStar
 from BinaryStar import BinaryStar
-from star import star
-from hrdiag import hrdiag
+from StellarCal import StellarCal
+from StellarProp import StellarProp
 
 star1 = SingleStar(type=1, mass=1, Z=0.02)
 star2 = SingleStar(type=1, mass=1, Z=0.02)

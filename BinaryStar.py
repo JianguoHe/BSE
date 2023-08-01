@@ -45,7 +45,7 @@ spec = [
 
 @conditional_jitclass(spec)
 class BinaryStar:
-    def __init__(self, star1, star2, eccentricity=0, separation=0, period=0, omega=0, dt=0,
+    def __init__(self, star1, star2, eccentricity=0, separation=0, period=0, dt=0,
                  jdot=0, jdot_wind=0, jdot_gr=0, jdot_mb=0, edot=0, edot_wind=0, edot_gr=0, edot_tide=0,
                  state='detached', event=None, max_time=10000, time=0, max_step=20000, step=0):
         self.star1 = star1
@@ -95,8 +95,15 @@ class BinaryStar:
 
         # 为双星设置合适的自旋值 [待完善]
 
+        # 计算双星自旋角动量
+        self.star1.cal_jspin()
+        self.star2.cal_jspin()
 
-
+        # 如果恒星为致密星，设置最小步长为0.01Myrs
+        if 10 <= self.star1.type <= 14:
+            self.star1.dt = 1e4
+        if 10 <= self.star2.type <= 14:
+            self.star2.type = 1e4
 
         # 考虑星风的影响（质量/自旋角动量/轨道角动量的减少/增加）
         # self.steller_wind()
@@ -111,13 +118,17 @@ class BinaryStar:
         # self.jdot = self.jdot_wind + self.jdot_gr + self.jdot_mb
         # self.dt = min(0.002 * self.jorb / self.jdot, self.star1.dt, self.star2.dt)
 
-        # 对于非致密星, 每次质量损失不超过包层质量, 且限制 1% [待完善]
-
-        # 更新质量和自旋
-        # self.star1.reset(self.dt)
-        # self.star2.reset(self.dt)
+        # 对于非致密星, 每次质量损失不超过包层质量, 且限制 1%
+        self.star1.limit_mass_change()
+        self.star2.limit_mass_change()
+        self.star1.dt = self.star2.dt = self.dt = min(self.star1.dt, self.star2.dt, self.dt)
 
         # 确保恒星的自旋不会瓦解 [待完善]
+        # spin_crit = 2 * np.pi * np.sqrt(mass[k] * aursun ** 3 / rad[k] ** 3)
+
+        # 更新质量和自旋
+        self.star1.reset()
+        self.star2.reset()
 
         # 更新轨道的角动量/偏心率/半长轴/周期/角频率
 

@@ -11,13 +11,13 @@ from StellarProp import StellarProp
 # Single star class
 
 spec = [
-    ('type', float64),                      # steller type
+    ('type', int64),                        # steller type
     ('Z', float64),                         # initial mass fraction of metals
     ('mass0', float64),                     # initial mass (solar units)
     ('mass', float64),                      # current mass (solar units)
     ('R', float64),                         # radius (solar units)
     ('L', float64),                         # luminosity (solar units)
-    ('dt', float64),                        # evolution timestep
+    ('dt', float64),                        # evolution timestep (unit: yr)
     ('Teff', float64),                      # effective temperature (K)
     ('spin', float64),                      # 自旋角频率(unit: /yr)
     ('jspin', float64),                     # 自旋角动量(unit: Msun * Rsun2 / yr)
@@ -34,10 +34,15 @@ spec = [
     ('radius_o_core', float64),             # in solar units
     ('radius_co_core', float64),            # in solar units
     ('radius_envelop', float64),            # in solar units
+    ('mdot', float64),                      # 星体质量变化率
     ('mdot_wind_loss', float64),            # 星风质量损失率
     ('mdot_wind_accrete', float64),         # 星风质量吸积率
+    ('mdot_mass_transfer', float64),        # 物质传输质量变化率
+    ('eta_mass_accrete', float64),          # 物质吸积效率
+    ('jdot_spin', float64),                 # 自旋角动量总变化率
     ('jdot_spin_wind', float64),            # 星风提取的自旋角动量
     ('jdot_spin_mb', float64),              # 磁制动提取的自旋角动量
+    ('jdot_spin_mt', float64),              # 质量变化导致的自旋角动量变化率
     ('max_time', float64),                  # 最长演化时间          [unit: Myr]
     ('time', float64),                      # 当前的演化时间        [unit: Myr]
     ('age', float64),                       # 当前type的演化时间    [unit: Myr]
@@ -65,7 +70,8 @@ class SingleStar:
     def __init__(self, type, Z, mass, R=0, L=0, dt=1e6, Teff=0, spin=0, jspin=0, rochelobe=0,
                  mass_core=0, mass_he_core=0, mass_c_core=0, mass_o_core=0, mass_co_core=0, mass_envelop=0,
                  radius_core=0, radius_he_core=0, radius_c_core=0, radius_o_core=0, radius_co_core=0,
-                 radius_envelop=0, mdot_wind_loss=0, mdot_wind_accrete=0, jdot_spin_wind=0, jdot_spin_mb=0,
+                 radius_envelop=0, mdot=0, mdot_wind_loss=0, mdot_wind_accrete=0, mdot_mass_transfer=0,
+                 eta_mass_accrete = 1, jdot_spin=0, jdot_spin_wind=0, jdot_spin_mb=0, jdot_spin_mt=0,
                  max_time=10000, time=0, age=0, max_step=20000, step=0):
         self.type = type
         self.Z = Z
@@ -90,10 +96,15 @@ class SingleStar:
         self.radius_o_core = radius_o_core
         self.radius_co_core = radius_co_core
         self.radius_envelop = radius_envelop
+        self.mdot = mdot
         self.mdot_wind_loss = mdot_wind_loss
         self.mdot_wind_accrete = mdot_wind_accrete
+        self.mdot_mass_transfer = mdot_mass_transfer
+        self.eta_mass_accrete = eta_mass_accrete
+        self.jdot_spin = jdot_spin
         self.jdot_spin_wind = jdot_spin_wind
         self.jdot_spin_mb = jdot_spin_mb
+        self.jdot_spin_mt = jdot_spin_mt
         self.max_time = max_time
         self.time = time
         self.age = age
@@ -132,10 +143,10 @@ class SingleStar:
     def cal_Teff(self):
         self.Teff = Teffsun * (self.L / self.R ** 2.0) ** (1.0 / 4.0)
 
-    # 更新质量和自旋角动量
-    def reset(self, dt):
-        self.mass = self.mass + (self.mdot_wind_accrete + self.mdot_wind_accrete) * dt
-        self.jspin = self.jspin + (self.jdot_spin_mb + self.jdot_spin_wind) * dt
+    def cal_jspin(self):
+        self.jspin = self.spin * (self.k2 * self.R * self.R * (self.mass - self.mass_core) + self.k3 * self.radius_core * self.radius_core * self.mass_core)
+
+
 
     # ------------------------------------------------------------------------------------------------------------------
     #                                                    保存当前属性
@@ -169,6 +180,26 @@ class SingleStar:
         if self.jdot_spin_mb > 0:
             dt_max = 0.03 * self.jspin / abs(self.jdot_spin_mb)
             self.dt = min(self.dt, dt_max)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #                                               限制质量损失(Msun/yr)
+    # ------------------------------------------------------------------------------------------------------------------
+    def limit_mass_change(self):
+        self.mdot = self.mdot_wind_loss + self.mdot_wind_accrete + self.mdot_mass_transfer
+        if self.type < 10:
+            # 限制 1% 的质量损失
+            if abs(self.mdot * self.dt) > 0.01 * self.mass:
+                self.dt = 0.01 * self.mass / abs(self.mdot)
+            # 限制包层的质量损失
+            if abs(self.mdot * self.dt) > self.mass - self.mass_core:
+                self.dt = (self.mass - self.mass_core) / abs(self.mdot)
+
+    # ------------------------------------------------------------------------------------------------------------------
+    #                                               更新质量和自旋角动量
+    # ------------------------------------------------------------------------------------------------------------------
+    def reset(self):
+        self.mass += self.mdot * self.dt
+        self.jspin += (self.jdot_spin_mb + self.jdot_spin_wind) * self.dt
 
     # ------------------------------------------------------------------------------------------------------------------
     #                                               总的星风质量损失(Msun/yr)

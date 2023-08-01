@@ -131,8 +131,8 @@ def cal_z(Fe_H):
 @conditional_njit()
 def rochelobe(q):
     p = q ** (1 / 3)
-    rl = 0.49 * p * p / (0.6 * p * p + np.log(1 + p))
-    return rl
+    rl_relative_a = 0.49 * p * p / (0.6 * p * p + np.log(1 + p))
+    return rl_relative_a
 
 
 # 求解开普勒方程中的偏近点角(Eccentric Anomaly), e 为离心率, M 为平均近点角(mean anomaly)
